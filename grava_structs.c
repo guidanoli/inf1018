@@ -29,11 +29,9 @@ int grava_structs (int nstructs, void *valores, char *campos, char ord, char *ar
 	/* Abre o arquivo em binário para escrita */
 	FILE *fname = fopen(arquivo,"wb");
 	unsigned char byte = 0;
-	int ncampos = 0, i = 0,j;
+	int ncampos = 0, i = 0,j,k;
 	int pAux = 0;
 	int size_struct = get_size_struct(campos);
-
-	printf("tamanho do struct = %d bytes\n",size_struct);
 
 	fwrite(&nstructs,sizeof(char),1,fname);
 
@@ -83,41 +81,51 @@ int grava_structs (int nstructs, void *valores, char *campos, char ord, char *ar
 		fwrite(&byte,sizeof(char),1,fname);
 	}
 
-	if (ord=='L'){
-		for(i=0;i<nstructs;i++){
-			
-			j = 0; /* contagem dos campos de cada struct */
-			pAux = 0; /* pAux é um inteiro que varia de 0 até o tamanho da struct */
-			while(j < ncampos){
-				int size_valor; /* size_valor é o tamanho em bytes do campo atual */
-				switch(campos[j]){
-					case 'c':
-						size_valor = sizeof(char);
-						break;
-					case 's':
-						size_valor = sizeof(short int);
-						break;
-					case 'i':
-						size_valor = sizeof(int);
-						break;
-					case 'l':
-						size_valor = sizeof(long int);
-						break;
-				} /* switch */
-				printf("i = %d\tpAux = %d\tsizevalor = %d (%c) \tend = %d\n",
-				i,pAux,size_valor,campos[j],(i*size_struct+pAux));
-				
-				fwrite((valores+i*size_struct+pAux),size_valor,1,fname); /* Escrita */
-				pAux = ((pAux-1)/size_valor + 1)*size_valor; /* Ajuste do endereço ao campo */
-				pAux += size_valor; /* Incremento do ponteiro auxiliar pelo tamanho do campo */
-				j += 1;
-				
-			} /* while */
-			
-		} /* for */
+	for(i=0;i<nstructs;i++){
 		
-	} /* if */
-
+		j = 0; /* contagem dos campos de cada struct */
+		pAux = 0; /* pAux é um inteiro que varia de 0 até o tamanho da struct */
+		while(j < ncampos){
+			int size_valor; /* size_valor é o tamanho em bytes do campo atual */
+			switch(campos[j]){
+				case 'c':
+					size_valor = sizeof(char);
+					break;
+				case 's':
+					size_valor = sizeof(short int);
+					break;
+				case 'i':
+					size_valor = sizeof(int);
+					break;
+				case 'l':
+					size_valor = sizeof(long int);
+					break;
+			} /* switch */
+			
+			if(pAux != 0)
+			{
+				pAux = ((pAux-1)/size_valor + 1)*size_valor; /* Ajuste do endereço ao campo */
+			}
+			
+			if (ord=='L')
+			{
+				fwrite((valores+i*size_struct+pAux),size_valor,1,fname); /* Escrita */
+			}
+			else
+			{
+				for( k = size_valor-1 ; k >= 0 ; k-- )
+				{
+					fwrite((valores+i*size_struct+pAux)+k,sizeof(char),1,fname); /* Escrita */
+				}
+			}
+			
+			pAux += size_valor; /* Incremento do ponteiro auxiliar pelo tamanho do campo */
+			
+			j += 1;
+			
+		} /* while */
+		
+	} /* for */
 
 	fclose(fname);
 
