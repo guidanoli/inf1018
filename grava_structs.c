@@ -277,10 +277,12 @@ int get_size_struct(char* campos){
 			maior = tamanho_var;  /* obtem-se o maior campo em bytes */
 		} /* if */
 		
-		end = ((end-1)/tamanho_var + 2)*tamanho_var; /* ajuste de endereço de
-														memória pelo campo */
+		if( i != 0 )
+		{
+			end = ((end-1)/tamanho_var + 2)*tamanho_var; /* ajuste de endereço de memória pelo campo */
+		}
+		
 	} /* for */
-	
 	return ((end-1)/maior + 1)*maior; /* ajuste de endereço de memória pelo maior campo */
 
 }/* fim da função get_size_struct */
