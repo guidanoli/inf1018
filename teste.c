@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "grava_structs.h"
 
-#define FNAME "relatorio.txt"
+#define FNAME "testes.txt"
 
 typedef struct teste_1{
 	int i1;
