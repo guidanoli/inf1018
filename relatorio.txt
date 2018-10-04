@@ -2,10 +2,10 @@
 /* Guilherme Dantas  1713155  3WB */
 /* Rafael Damazio    1712990  3WB */
 
+Realizamos testes com diversas structs, considerando ordenações little e big endian.
+Não encontramos nenhum caso de insucesso.
 
-Realizamos testes com diversas structs e utilizamos as ordenações (little e big endian) e não encontramos nenhum caso de insucesso.
-
-structs utilizadas:
+A estrutura binária das structs testadas podem possuir padding ou não, spadding no final da última palavra ou não, e possuem tamanhos variados:
 
 typedef struct teste_1{
 	int i1;
