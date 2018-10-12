@@ -34,11 +34,17 @@ static int get_size_struct(char* campos);
 int grava_structs (int nstructs, void *valores, char *campos, char ord, char *arquivo){
 	/* Abre o arquivo em binário para escrita */
 	
-	FILE *fname = fopen(arquivo,"wb");
+	FILE *fname = NULL;
 	unsigned char byte = 0;
 	int ncampos = 0, i = 0, j = 0, k =0;
 	int pAux = 0;
 	int size_struct = get_size_struct(campos);
+
+   fname = fopen(arquivo,"wb");
+   if( fname == NULL )
+   {
+      return -1;
+   } /* if */
 
 	fwrite(&nstructs,sizeof(char),1,fname);
 
