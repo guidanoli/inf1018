@@ -1,12 +1,41 @@
 
 
-pushq %rbp				= 55 			= 1 byte
-movq %rsp,%rbp     		= 48 89 e5		= 3 bytes
-subq $cte, %rsp			= 48 83 ec cte	= 4 bytes
+pushq %rbp				= 55			= 1 byte
 
+movq %rsp,%rbp     		= 48 89 e5		= 3 bytes
+
+subq $cte, %rsp			= 48 83 ec cte	= 4 bytes
+----------------------------------------------------------------------------------------------------
 movl $cte, -cte2(%rbp)	= c7 45 100-cte2(em hexa) cte cte cte cte (em little_endian)	= 7 bytes
+
 addl $cte, -cte2(%rbp)  = 81 45 100-cte2(em hexa) cte cte cte cte (em litte_endian)		= 7 bytes
-imull $cte, %regis 		= 6b 	cte	= 3 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+addl $cte, -cte2(%rbp)  = 83 45 100-cte2 cte (final do numero em hexa) 					= 4 bytes
+(caso contrario)
+
+subl $cte, -cte2(%rbp)	= 81 6d 100-cte2(em hexa) cte cte cte cte (em little_endian)	= 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+subl $cte, -cte2(%rbp)	= 83 6d 100-cte2(em hexa) cte (final do numero em hexa)			= 4 bytes
+(caso contrario)
+----------------------------------------------------------------------------------------------------
+
+movl -cte(%rbp), %r10d	= 44 8b 55 100-cte (em hexa)	= 3 bytes
+
+addl $cte,%r10d			= 41 81 c2 cte cte cte cte (em hexa e little_endian) = 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+addl $cte,%r10d 		= 41 83 c2 cte (final do numero em hexa) = 4 bytes
+(caso contrario)
+
+subl $cte,%r10d			= 41 81 ea cte cte cte cte (em hexa e little_endian) = 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+subl $cte,%r10d			= 41 83 ea cte (final do numero em hexa) = 4 bytes
+(caso contrario)
+
+imull $cte, %r10d		= 45 6b	d2 cte	= 4 bytes
 
 
 
