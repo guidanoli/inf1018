@@ -1,0 +1,13 @@
+
+
+pushq %rbp				= 55 			= 1 byte
+movq %rsp,%rbp     		= 48 89 e5		= 3 bytes
+subq $cte, %rsp			= 48 83 ec cte	= 4 bytes
+
+movl $cte, -cte2(%rbp)	= c7 45 100-cte2(em hexa) cte cte cte cte (em little_endian)	= 7 bytes
+addl $cte, -cte2(%rbp)  = 81 45 100-cte2(em hexa) cte cte cte cte (em litte_endian)		= 7 bytes
+imull $cte, %regis 		= 6b 	cte	= 3 bytes
+
+
+
+
