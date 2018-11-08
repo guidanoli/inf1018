@@ -1,47 +1,65 @@
+      -------------------------------------------------------------
+      | COMANDOS EM LINGUAGEM DE MÁQUINA RELATIVOS A ASM X86 AT&T |
+      -------------------------------------------------------------
 
+pushq %rbp = 55 = 1 byte
 
-pushq %rbp				= 55			= 1 byte
+movq %rsp, %rbp = 48 89 e5 = 3 bytes
 
-movq %rsp,%rbp     		= 48 89 e5		= 3 bytes
+subq $cte, %rsp = 48 83 ec cte	= 4 bytes
 
-subq $cte, %rsp			= 48 83 ec cte	= 4 bytes
 ----------------------------------------------------------------------------------------------------
-movl $cte, -cte2(%rbp)	= c7 45 100-cte2(em hexa) cte cte cte cte (em little_endian)	= 7 bytes
 
-addl $cte, -cte2(%rbp)  = 81 45 100-cte2(em hexa) cte cte cte cte (em litte_endian)		= 7 bytes
+movl $cte, -cte2(%rbp)	= c7 45 100-cte2(em hexa) cte cte cte cte (em little_endian) = 7 bytes
+
+addl $cte, -cte2(%rbp)  = 81 45 100-cte2(em hexa) cte cte cte cte (em litte_endian) = 7 bytes
 (numeros maiores/iguais que 128 e menores/iguais que 4294967167)
 
-addl $cte, -cte2(%rbp)  = 83 45 100-cte2 cte (final do numero em hexa) 					= 4 bytes
+addl $cte, -cte2(%rbp)  = 83 45 100-cte2 cte (final do numero em hexa) = 4 bytes
 (caso contrario)
 
-subl $cte, -cte2(%rbp)	= 81 6d 100-cte2(em hexa) cte cte cte cte (em little_endian)	= 7 bytes
+subl $cte, -cte2(%rbp)	= 81 6d 100-cte2(em hexa) cte cte cte cte (em little_endian) = 7 bytes
 (numeros maiores/iguais que 128 e menores/iguais que 4294967167)
 
-subl $cte, -cte2(%rbp)	= 83 6d 100-cte2(em hexa) cte (final do numero em hexa)			= 4 bytes
+subl $cte, -cte2(%rbp)	= 83 6d 100-cte2(em hexa) cte (final do numero em hexa) = 4 bytes
+(caso contrario)
+
+----------------------------------------------------------------------------------------------------
+
+movl -cte(%rbp), %r10d	= 44 8b 55 100-cte (em hexa) = 3 bytes
+
+addl $cte, %r10d	= 41 81 c2 cte cte cte cte (em hexa e little_endian)= 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+addl $cte, %r10d = 41 83 c2 cte (final do numero em hexa) = 4 bytes
+(caso contrario)
+
+subl $cte, %r10d = 41 81 ea cte cte cte cte (em hexa e little_endian)= 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+subl $cte, %r10d = 41 83 ea cte (final do numero em hexa) = 4 bytes
+(caso contrario)
+
+imull $cte, %r10d = 45 69 d2 cte cte cte cte (em little_endian) = 7 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+
+imull $cte, %r10d = 45 6b d2 cte (final do numero em hexa) = 4 bytes
 (caso contrario)
 ----------------------------------------------------------------------------------------------------
-movl -cte(%rbp), %r10d	= 44 8b 55 100-cte (em hexa)						= 3 bytes
 
-addl $cte,%r10d			= 41 81 c2 cte cte cte cte (em hexa e little_endian)= 7 bytes
-(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+cmpl $0, -cte2(%rbp) = 83 7d 100-cte2(em hexa) 00 = 4 bytes
+(zret)
 
-addl $cte,%r10d 		= 41 83 c2 cte (final do numero em hexa) 			= 4 bytes
-(caso contrario)
+[Tabela com códigos para jump] http://faydoc.tripod.com/cpu/je.htm
+"The target instruction is specified with a relative offset (a signed offset relative to the current value of the instruction pointer in the EIP register). A relative offset (rel8, rel16, or rel32) is generally specified as a label in assembly code, but at the machine code level, it is encoded as a signed, 8-bit or 32-bit immediate value, which is added to the instruction pointer. Instruction coding is most efficient for offsets of –128 to +127. If the operand-size attribute is 16, the upper two bytes of the EIP register are cleared to 0s, resulting in a maximum instruction pointer size of 16 bits."
 
-subl $cte,%r10d			= 41 81 ea cte cte cte cte (em hexa e little_endian)= 7 bytes
-(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+je tag = 0f 84 cte cte cte cte (em little_endian) = 6 bytes
+(numeros maiores/iguais que 128 e menores/iguais que 4294967167) <<< NÃO TESTEI
 
-subl $cte,%r10d			= 41 83 ea cte (final do numero em hexa)			= 4 bytes
-(caso contrario)
+je tag = 74 cte (em little_endian) = 2 bytes
+(caso contrário) <<< NÃO TESTEI
 
-imull $cte, %r10d 		= 45 69 d2 cte cte cte cte (em little_endian)		= 7 bytes
-(numeros maiores/iguais que 128 e menores/iguais que 4294967167)
+leave = c9 = 1 byte
 
-imull $cte, %r10d		= 45 6b	d2 cte (final do numero em hexa)			= 4 bytes
-(caso contrario)
-----------------------------------------------------------------------------------------------------
-leave	= c9 	= 1 byte
-
-ret		= c3 	= 1 byte
-
+ret = c3 = 1 byte
 
