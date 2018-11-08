@@ -2,5 +2,14 @@
 .globl main
 
 main:
-	cmpl $0,%eax
-	je foo
+	pushq %rbp
+	movq %rsp,%rbp
+	subq $32, %rbp
+
+	movl %r10d, -4(%rbp)
+	
+	movl $0,%eax
+	leave 
+	ret
+	
+

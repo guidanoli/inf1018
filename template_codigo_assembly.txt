@@ -26,7 +26,9 @@ subl $cte, -cte2(%rbp)	= 83 6d 100-cte2(em hexa) cte (final do numero em hexa) =
 
 ----------------------------------------------------------------------------------------------------
 
-movl -cte(%rbp), %r10d	= 44 8b 55 100-cte (em hexa) = 3 bytes
+movl -cte(%rbp), %r10d	= 44 8b 55 100-cte (em hexa) = 4 bytes
+
+movl %r10d, -cte(%rbp)  = 44 89 55 100-cte (em hexa) = 4 bytes
 
 addl $cte, %r10d	= 41 81 c2 cte cte cte cte (em hexa e little_endian)= 7 bytes
 (numeros maiores/iguais que 128 e menores/iguais que 4294967167)
@@ -68,8 +70,8 @@ call func = e8 cte cte cte cte (diferença signed entre endereços, em little en
 
 jmp func/label = e9 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
 
-
-
+jne = 75 diff 
+(para diferenças pequenas)
 
 
 
