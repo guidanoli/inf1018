@@ -13,6 +13,14 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   int line = 1;
   int  c;
 
+	*code = (unsigned char *) malloc(1024);
+	/* O valor 1024 foi estimado através do comando mais
+		 custo (em código de máquina), que é a soma (SBF).
+		 Custa 21 bytes. Com o máximo de 50 linhas...
+		 1050, que é bem próximo de 1024 (o arredondamento
+		 pode ser feito pois é absurdo o programa só ter
+		 operações aritméticas) */
+
   while ((c = fgetc(f)) != EOF) {
     switch (c) {
       case 'f': { /* function */
