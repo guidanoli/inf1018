@@ -1,0 +1,72 @@
+      ------------------------------------------------------
+      | CONVERSÃO DE CÓDIGO DA LINGUAGEM SBF PARA ASSEMBLY |
+      ------------------------------------------------------
+
+Function:
+
+	PILHA -> Pilha constante
+		pushq %rbp
+		movq %rsp, %rbp
+		subq $<tamanho_pilha>, %rsp	(DESCONTINUADO)
+		subq $32, %rsp
+		
+		PARA A I-ÉSIMA VARIÁVEL... 
+		movl <vi>, -i*4(%rbp)
+		
+		PARA O PARÂMETRO...
+		movl %edi, -<pos_parametro>(%rbp)	(DESCONTINUADO)
+		movl %edi, -32(%rbp)
+		
+Att:
+
+	VAR = OPER
+	
+		<Y> = <X1> + <X2>
+			movl <X1>, REG
+			addl <X2>, REG
+			movl REG, <Y>
+			
+		<Y> = <X1> - <X2>
+			movl <X1>, REG
+			subl <X2>, REG
+			movl REG, <Y>
+		
+		<Y> = <X1> * <X2>
+			movl <X1>, REG
+			imull <X2>, REG
+			movl REG, <Y>
+	
+	VAR = CALL FUNC <X>
+		movl <X>, %edi
+		call <FUNC>
+		movl %eax, <VAR>
+		
+Zret:
+
+	ZRET <X1> <X2>
+		cmpl $0, <x1>
+		jne <&label>
+		movl <x2>, %eax
+		leave
+		ret
+		label:
+		
+		OBS: jne <&label> será em código de máquina sempre igual a...
+		
+		75 07
+		
+Ret:
+	
+	CTE -> retorna constante
+		movl $<cte>, %eax
+		
+	PARAM -> retorna parâmetro
+		movl -32(%rbp), %eax
+		
+	VAR -> retorna variável
+		movl -i*4(%rbp), %eax
+		
+End:
+
+		leave
+		ret
