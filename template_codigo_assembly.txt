@@ -45,7 +45,6 @@ imull $cte, %r10d = 45 69 d2 cte cte cte cte (em little_endian) = 7 bytes
 
 imull $cte, %r10d = 45 6b d2 cte (final do numero em hexa) = 4 bytes
 (caso contrario)
-
 ----------------------------------------------------------------------------------------------------
 
 cmpl $0, -cte2(%rbp) = 83 7d 100-cte2(em hexa) 00 = 4 bytes
@@ -54,7 +53,7 @@ cmpl $0, -cte2(%rbp) = 83 7d 100-cte2(em hexa) 00 = 4 bytes
 [Tabela com códigos para jump] http://faydoc.tripod.com/cpu/je.htm
 "The target instruction is specified with a relative offset (a signed offset relative to the current value of the instruction pointer in the EIP register). A relative offset (rel8, rel16, or rel32) is generally specified as a label in assembly code, but at the machine code level, it is encoded as a signed, 8-bit or 32-bit immediate value, which is added to the instruction pointer. Instruction coding is most efficient for offsets of –128 to +127. If the operand-size attribute is 16, the upper two bytes of the EIP register are cleared to 0s, resulting in a maximum instruction pointer size of 16 bits."
 
-je tag = 0f 84 cte cte cte cte (em little_endian) = 6 bytes
+je tag = 0f 84 cte cte cte cte (diferença signed entre endereços, em little endian) = 6 bytes
 (numeros maiores/iguais que 128 e menores/iguais que 4294967167) <<< NÃO TESTEI
 
 je tag = 74 cte (em little_endian) = 2 bytes
@@ -63,5 +62,30 @@ je tag = 74 cte (em little_endian) = 2 bytes
 leave = c9 = 1 byte
 
 ret = c3 = 1 byte
+----------------------------------------------------------------------------------------------------
+
+call func = e8 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
+
+jmp func/label = e9 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
