@@ -1,3 +1,8 @@
+/*
+Aluno: Guilherme Dantas	Matrícula: 1713155
+Aluno: Rafael Damazio		Matrícula: 1712990
+*/
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>

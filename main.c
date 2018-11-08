@@ -1,3 +1,8 @@
+/*
+Aluno: Guilherme Dantas	Matrícula: 1713155
+Aluno: Rafael Damazio		Matrícula: 1712990
+*/
+
 #include "gera_codigo.h"
 
 int main(int argc, char *argv[]) {
