@@ -13,30 +13,29 @@ static void error (const char *msg, int line) {
   exit(EXIT_FAILURE);
 }
 
-unsigned char cod_function[] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x4c,0x89,0x55,0xe0};	//Inicia a pilha, e salva %r10 em -32(%rbp) SE HOUVER CHAMADA DE OUTRA FUNÇÃO, UTILIZAR COD_MOV_PARM_PILHA[]
+unsigned char cod_function[] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x4c,0x89,0x55,0xe0}; //Inicia a pilha, e salva %r10 em -32(%rbp)
 
-unsigned char cod_mov_var_reg[] = {0x44,0x8b,0x55,0x100};										// move para %r10d o valor da  variavel 100-indice
-unsigned char cod_mov_cte_reg[] = {0x41,0xba,0x00,0x00,0x00,0x00} 								// move para %r10d o valor da constante 00 00 00 00 
-unsigned char cod_mov_reg_var[] = {0x44,0x89,0x55,0x100}; 										// move para 100-indice da variavel, o valor de %r10d     
+unsigned char cod_mov_var_reg[] = {0x44,0x8b,0x55,0x100}; // move para %r10d o valor da  variavel 100-indice
+unsigned char cod_mov_cte_reg[] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
+unsigned char cod_mov_reg_var[] = {0x44,0x89,0x55,0x100}; // move para 100-indice da variavel, o valor de %r10d     
 
-unsigned char cod_mov_cte_parm[] = {0xbf,0x00,0x00,0x00,0x00}; 									// move para %edi, a constante 00 00 00 00 (little)
-unsigned char cod_mov_var_parm[] = {0x8b,0x7d,0x100}; 											// move para %edi, a variavel 100-indice da memoria
-unsigned char cod_mov_parm_pilha[] = {0x89,0x7d,0xe4}; 											// move %edi para a posição de memoria -28(%rbp)
+unsigned char cod_mov_cte_parm[] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
+unsigned char cod_mov_var_parm[] = {0x8b,0x7d,0x100}; // move para %edi, a variavel 100-indice da memoria
+unsigned char cod_mov_parm_pilha[] = {0x89,0x7d,0xe4}; // move %edi para a posição de memoria -28(%rbp)
 
-unsigned char cod_opr_add_cte_reg[] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00}; 					// adiciona a constante 00 00 00 00 em %r10d
-unsigned char cod_opr_add_var_reg[] = {0x44,0x03,0x55,0x100}; 									// adiciona em %r10d o valor da variavel 100-indice
+unsigned char cod_opr_add_cte_reg[] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00}; // adiciona a constante 00 00 00 00 em %r10d
+unsigned char cod_opr_add_var_reg[] = {0x44,0x03,0x55,0x100}; // adiciona em %r10d o valor da variavel 100-indice
 
-unsigned char cod_opr_sub_cte_reg[] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00}; 					// subtrai o valor da constante 00 00 00 00 em %r10d
-unsigned char cod_opr_sub_var_reg[] = {0x44,0x2b,0x55,0x100}; 									// subtrai o valor da variavel 100-indice em %r10d
+unsigned char cod_opr_sub_cte_reg[] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00}; // subtrai o valor da constante 00 00 00 00 em %r10d
+unsigned char cod_opr_sub_var_reg[] = {0x44,0x2b,0x55,0x100}; // subtrai o valor da variavel 100-indice em %r10d
 
-unsigned char cod_opr_mult_cte_reg[] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; 					// multiplica o valor de %r10d pela constante 00 00 00 00 
-unsigned char cod_opr_mul_var_reg[] = {0x44,0x0f,0xaf,0x55,0x100}; 								// multiplica o valor de %r10d pela variavel 100-indice
+unsigned char cod_opr_mult_cte_reg[] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; // multiplica o valor de %r10d pela constante 00 00 00 00 
+unsigned char cod_opr_mul_var_reg[] = {0x44,0x0f,0xaf,0x55,0x100}; // multiplica o valor de %r10d pela variavel 100-indice
 
-unsigned char cod_call[] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x100}; 							/*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM // 																									gera o call, e move %eax para a variavel 100-indice*/
-
-unsigned char cod_ret_cte[] = {0xb8,0x00,0x00,0x00,0x00}; 										// move constante 00 00 00 00 para %eax
-unsigned char cod_ret_var[] = {0x8b,0x45,0x100}; 												// move constante variavel 100-indice para %eax
-unsigned char cod_ret_parm[] = {0x89,0xf8}; 													// move %edi para %eax (este caso provavelmente não será usado)
+unsigned char cod_call[] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x100}; /*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM / gera o call, e move %eax para a variavel 100-indice*/
+unsigned char cod_ret_cte[] = {0xb8,0x00,0x00,0x00,0x00}; // move constante 00 00 00 00 para %eax
+unsigned char cod_ret_var[] = {0x8b,0x45,0x100}; // move constante variavel 100-indice para %eax
+unsigned char cod_ret_parm[] = {0x89,0xf8};// move %edi para %eax (este caso provavelmente não será usado)
 
 
 unsigned char cod_zret[] = {};
