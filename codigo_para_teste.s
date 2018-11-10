@@ -2,8 +2,8 @@
 .globl main
 
 main:
-	movl $100000,%edi
-	movl -8(%rbp), %edi
+	movl %edi,%eax
+	movl %eax,-4(%rbp)
 	
 	
 	
