@@ -2,14 +2,10 @@
 .globl main
 
 main:
-	pushq %rbp
-	movq %rsp,%rbp
-	subq $32, %rbp
-
-	movl %r10d, -4(%rbp)
+	movl $100000,%edi
+	movl -8(%rbp), %edi
 	
-	movl $0,%eax
-	leave 
-	ret
+	
+	
 	
 

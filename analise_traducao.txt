@@ -13,7 +13,7 @@ Function:
 		PARA A I-ÉSIMA VARIÁVEL... >>> 7 bytes
 		movl <vi>, -i*4(%rbp)
 		
-		PARA O PARÂMETRO... >>> 4 bytes
+		PARA O PARÂMETRO... >>> 3 bytes
 		movl %edi, -32(%rbp)
 		
 Att:
@@ -67,7 +67,8 @@ Ret:
 		
 End:
 
-	SAÍDA DE FUNÇÃO >>> 2 bytes
+	SAÍDA DE FUNÇÃO >>> 6 bytes
+		movq -32(%rbp),%r10
 		leave
 		ret
 		

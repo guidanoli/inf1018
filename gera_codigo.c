@@ -13,6 +13,21 @@ static void error (const char *msg, int line) {
   exit(EXIT_FAILURE);
 }
 
+unsigned char cod_function[] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x4c,0x89,0x55,0xe0}; //Inicia a pilha, e salva %r10 em -32(%rbp)
+unsigned char cod_mov_var[] = {0x44,0x89,0x55,0x100}; // move para 100-indice da variavel, o valor de %r10d
+unsigned char cod_mov_cte_parm[] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
+unsigned char cod_mov_var_parm[] = {0x8b,0x7d,0x100}; // move para %edi, a variavel 100-indice da memoria
+unsigned char cod_mov_parm_pilha[] = {0x89,0x7d,0xe4}; // move %edi para a posição de memoria -28(%rbp)
+unsigned char cod_opr_add[] = {};
+unsigned char cod_opr_sub[] = {};
+unsigned char cod_opr_mult[] = {};
+unsigned char cod_ret[] = {};
+unsigned char cod_call[] = {};
+unsigned char cod_zret[] = {};
+unsigned char cod_end[] = {0x4c,0x8b,0x55,0xe0,0xc9,0xc3}; // Desfaz a pilha e restaura %r10 (de -32(%rbp) para %r10
+
+unsigned char end_func[50] = {}
+
 void gera_codigo (FILE *f, void **code, funcp *entry) {
 
   int line = 1;
