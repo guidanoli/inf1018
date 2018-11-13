@@ -67,8 +67,7 @@ Ret:
 		
 End:
 
-	SAÍDA DE FUNÇÃO >>> 6 bytes
-		movq -32(%rbp),%r10
+	SAÍDA DE FUNÇÃO >>> 2 bytes
 		leave
 		ret
 		
