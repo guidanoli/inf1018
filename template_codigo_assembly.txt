@@ -89,20 +89,14 @@ movl %eax, -cte(%rbp) = 89 45 100-cte = 3 bytes
 movl $cte, %eax         = b8 cte cte cte cte (em hexa) = 5 bytes
 movl -cte(%rbp) %eax    = 8b 45 100-cte    (em hexa)   = 3 bytes
 
-
 jmp func/label = e9 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
 
 jne = 75 diff 
 (para diferenças pequenas)
 
-
-
 movl %edi,-28(%rbp)     = 89 7d e4  = 3 bytes
 movl $cte, %edi			= bf cte cte cte cte = 5 bytes
 movl -cte(%rbp), %edi   = 8b 7d 100-cte = 3 bytes
-
-
-
 
 OBS: ESQUECEMOS DE CONSIDERAR O MOVIMENTO DO R10 PRA MEMORIA E O RETORNO NO FINAL
 DISCUTIR A UTILIZAÇÃO DO PARAMETRO -- SEMPRE NA MEMORIA OU NÃO
