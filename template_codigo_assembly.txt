@@ -91,7 +91,7 @@ movl -cte(%rbp) %eax    = 8b 45 100-cte    (em hexa)   = 3 bytes
 
 jmp func/label = e9 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
 
-jne = 75 diff 
+jne = 75 diff = 2 bytes
 (para diferenças pequenas)
 
 movl %edi,-28(%rbp)     = 89 7d e4  = 3 bytes
