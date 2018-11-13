@@ -70,7 +70,7 @@ call func = e8 cte cte cte cte (diferença signed entre endereços, em little en
 
 jmp func/label = e9 cte cte cte cte (diferença signed entre endereços, em little endian) = 5 bytes
 
-jne = 75 diff 
+jne = 75 diff = 2 bytes
 (para diferenças pequenas)
 
 
