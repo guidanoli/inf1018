@@ -1,34 +1,30 @@
 .text
-.globl main
+.globl f1, f2, main
 
+f1:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movl %edi, -28(%rbp)
+	call f2
+	movl -28(%rbp), %r10d
+	cmpl $0, %r10d
+	movl %r10d, %eax
+	jne label
+	leave
+	ret
+label:
+	
+f2:
+	pushq %rbp
+	movq %rsp, %rbp
+	subq $32, %rsp
+	movl %edi, -28(%rbp)
+	movl $1024, %eax
+	leave
+	ret
+	
 main:
-	/* zret $cte $cte */
-	movl $12313, %r10d
-	cmpl $0, %r10d
-	jne label
-	movl $998, %eax
-	leave
+	call f1
+	movl $0, %eax
 	ret
-	
-	/* zret $cte pilha */
-	movl $999, %r10d
-	cmpl $0, %r10d
-	jne label
-	movl -28(%rbp), %eax
-	leave
-	ret
-	
-	/* zret pilha $cte */
-	cmpl $0, -28(%rbp)
-	jne label
-	movl $999, %eax
-	leave
-	ret
-	
-	/* zret pilha pilha */
-	cmpl $0, -28(%rbp)
-	jne label
-	movl -28(%rbp), %eax
-	leave
-	ret
-	label:

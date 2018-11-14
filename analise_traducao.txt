@@ -11,7 +11,7 @@ Function:
 		
 		
 		PARA A I-ÉSIMA VARIÁVEL... >>> 7 bytes
-		movl <vi>, -i*4(%rbp)
+		movl <vi>, -(i+1)*4(%rbp)
 		
 		PARA O PARÂMETRO... >>> 3 bytes
 		movl %edi, -28(%rbp)
@@ -44,8 +44,8 @@ Zret:
 
 	ZRET <X1> <X2> >>> 15 bytes
 		cmpl $0, <x1> -- 4
-		jne <&label> -- 2
 		movl <x2>, %eax -- 7
+		jne <&label> -- 2
 		leave -- 1
 		ret -- 1
 		label:
