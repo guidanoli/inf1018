@@ -1,0 +1,13 @@
+function
+ret $0
+ret $-1
+ret $1
+ret $100
+ret $-100
+ret $256
+ret $-256
+ret $257
+ret $-257
+ret $123456789
+ret $-123456789
+end
