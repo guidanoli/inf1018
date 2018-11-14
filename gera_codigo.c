@@ -22,6 +22,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *		 1.2    13/11/2018  gui				Funções write_commands e print_commands
 *		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
 *																	num_lendian, cmd_zret
+*		 1.4		14/11/2018	gui				entry aponta para última função
 *
 ******************************************************************/
 
@@ -102,6 +103,33 @@ static unsigned char * pCode = NULL;
    Como nosso módulo opera apenas com um código
    por vez, esta implementação é o suficiente. */
 
+/***************************************************************
+*
+*	gera_codigo	- Gera código de máquina a partir da linguagem SBF
+*
+*	Descrição:
+*		Armazena num vetor os comandos em linguagem de máquina
+*		que fazem a mesma tarefa do programa SBF lido pelo arquivo
+*		em f, retornando o endereço da última função.
+*
+*	Assertivas de Entrada:
+*		Assume que o arquivo está aberto no documento que contém
+*		o programa em SBF, e que este programa está redigido
+*		corretamente.
+*
+*	Assertivas de Saída:
+*		Caso ocorra algum erro, o programa será interrompido.
+*		Caso contrário, code apontará para vetor de comandos,
+*		e entry apontará para última função. f apontará para
+*		o último caractere do arquivo. O arquivo não é fechado!
+*
+*	Parâmetros:
+*		f			-	fluxo de entrada
+*		code	-	ponteiro para vetor de comandos em cod. de máquina
+*		entry	-	ponteiro para última função
+*
+****************************************************************/
+
 void gera_codigo (FILE *f, void **code, funcp *entry) {
 	
   int line = 1;
@@ -111,7 +139,7 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   	error("Vetor nulo fornecido a funcao que gera codigo",0);
   }
   
-  pCode = ( unsigned char * ) *code;
+  *code = NULL;
   
 	pCode = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
@@ -228,6 +256,11 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
     }
     line ++;
     fscanf(f, " ");
+    
+    *code = (void *) pCode;
+    
+    /* A última função será apontada por entry */
+    *entry = (funcp) (pCode + end_func[ qtd_func - 1 ]);
   }
   return;
 }

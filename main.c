@@ -33,6 +33,8 @@ int main(int argc, char *argv[]) {
     return 0;
   }
   
+  fclose(fp);
+  
   /* Chama a função gerada */
   //res = (*funcSBF)(argv[2]);
   
