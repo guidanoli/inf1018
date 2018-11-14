@@ -7,13 +7,13 @@ f1:
 	subq $32, %rsp
 	movl %edi, -28(%rbp)
 	call f2
-	movl -4(%rbp), %eax
-	movl -8(%rbp), %eax
-	movl -12(%rbp), %eax
-	movl -16(%rbp), %eax
-	movl -20(%rbp), %eax
+	movl -28(%rbp), %r10d
+	cmpl $0, %r10d
+	movl %r10d, %eax
+	jne label
 	leave
 	ret
+label:
 	
 f2:
 	pushq %rbp

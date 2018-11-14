@@ -20,7 +20,8 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *		   1		06/11/2018	gui,raf		Início do desenvolvimento
 *		 1.1    08/11/2018  gui,raf		Estrutura da função gera_codigo
 *		 1.2    13/11/2018  gui				Funções write_commands e print_commands
-*		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end, num_lendian
+*		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
+*																	num_lendian, cmd_zret
 *
 ******************************************************************/
 
@@ -39,6 +40,11 @@ Aluno: Rafael Damazio Matrícula: 1712990
 #define SZ_RET_CTE 5
 #define SZ_RET_PARM 3
 #define SZ_RET_VAR 3
+#define SZ_MOV_CTE_REG 6
+#define SZ_ZRET_CMPL 4
+#define SZ_ZRET_JNE 2
+#define SZ_MOV_PARM_REG 4
+#define SZ_MOV_VAR_REG 4
 
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
@@ -50,14 +56,16 @@ static void num_lendian ( unsigned char *commands, size_t pos, size_t bytes, int
 static int cmd_function ( void );
 static int cmd_end ( void );
 static int cmd_ret ( char var, int idx );
+static int cmd_zret ( char var0, int idx0, char var1, int idx1 );
 
 /***************** Código de máquina das variáveis *****************/
 
 static unsigned char cod_function[SZ_FUNCTION] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x89,0x7d,0xe4};
 // Inicia a pilha e armazena %edi
 
-static unsigned char cod_mov_var_reg[] = {0x44,0x8b,0x55,0x00}; // move para %r10d o valor da  variavel 00-indice
-static unsigned char cod_mov_cte_reg[] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
+static unsigned char cod_mov_parm_reg[SZ_MOV_PARM_REG] = {0x44,0x8b,0x55,0xe4};
+static unsigned char cod_mov_var_reg[SZ_MOV_VAR_REG] = {0x44,0x8b,0x55,0x00}; // move para %r10d o valor da  variavel 00-indice
+static unsigned char cod_mov_cte_reg[SZ_MOV_CTE_REG] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
 static unsigned char cod_mov_reg_var[] = {0x44,0x89,0x55,0x00}; // move para 00-indice da variavel, o valor de %r10d     
 
 static unsigned char cod_mov_cte_parm[] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
@@ -75,11 +83,11 @@ static unsigned char cod_opr_mult_var_reg[] = {0x44,0x0f,0xaf,0x55,0x00}; // mul
 
 static unsigned char cod_call[] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM / gera o call, e move %eax para a variavel 00-indice*/
 static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00}; // move constante 00 00 00 00 para %eax
-static unsigned char cod_ret_var[] = {0x8b,0x45,0x00}; // move constante variavel 00-indice para %eax
-static unsigned char cod_ret_parm[] = {0x8b,0x45,0xe4};// move -28(%edi) para %eax (este caso provavelmente não será usado)
+static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};// move -28(%edi) para %eax (este caso provavelmente não será usado)
+static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00}; // move constante variavel 00-indice para %eax
 
-static unsigned char cod_zret_reg[] = {0x41,0x83,0xfa,0x00,0x75,0x05}; // sempre trabalha com %r10d e com o mesmo label
-static unsigned char cod_zret_pil[] = {0x83,0x7d,0xCC,0x00,0x75,0x05}; // CC -- subtrai o valor da variavel 100-indice em %r10d
+static unsigned char cod_zret_cmpl[SZ_ZRET_CMPL] = {0x41,0x83,0xfa,0x00}; // sempre trabalha com %r10d e com o mesmo label
+static unsigned char cod_zret_jne[SZ_ZRET_JNE] = {0x75,0x02};
 
 static unsigned char cod_end[SZ_END] = {0xc9,0xc3}; // Desfaz a pilha e retorna ao ultimo endereço
 
@@ -174,11 +182,23 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
         break;
       }
       case 'z': {  /* retorno condicional */
-        int idx0, idx1;
+        int idx0, idx1, ret;
         char var0, var1;
         if (fscanf(f, "ret %c%d %c%d", &var0, &idx0, &var1, &idx1) != 4) 
           error("comando invalido", line);
         printf("zret %c%d %c%d\n", var0, idx0, var1, idx1);
+        ret = cmd_zret( var0, idx0, var1, idx1 );
+        if( ret == 1 )
+        	error("Memoria insuficiente!", line);
+        else if( ret == -1 )
+        	error("Parametros invalidos!", line);
+        	
+        #ifdef _DEBUG
+      	printf("\n>>> Comandos:\n");
+      	print_commands();
+      	printf("\n\n");
+      	#endif
+        
         break;
       }
       case 'v': {  /* atribuicao */
@@ -502,6 +522,136 @@ int cmd_ret ( char var, int idx ) {
 	} /*switch*/
 
 } /* fim da função cmd_ret */
+
+/***************************************************************
+*
+*	cmd_zret	- Compilar lexema "zret"
+*
+*	Descrição:
+*		Se o primeiro parâmetro for zero, retorna o segundo
+*		parâmetro. Senão, continua a execução da função.
+*
+*	Assertivas de Entrada:
+*		Assume que os parâmetros são válidos, isto é,
+*		para var = 'p', idx = 0 e para var = 'v',
+*		idx pertence ao conjunto {0,1,2,3,4} ,
+*		para var = '$', idx deve estar dentro dos limtes de INT.
+*		Caso esta AE seja descumprida, -1 será retornado.
+*
+*	Retorno:
+*		0 se escreveu comandos com sucesso
+*		-1 se os parâmetros são inválidos.
+*		1 se extrapolaria limite do vetor code (não escreve)
+*
+****************************************************************/
+
+int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
+	
+	int retorno;
+	
+	/* param1 == 0 ? */
+	
+	switch( var0 ) {
+	
+		case '$':
+		
+	/*************************************************************
+	* "zret $cte #" em asm	|	"zret $cte #" em bytes
+	*												|
+	*	movl $cte, $r10d			|	41 ba 00 00 00 00 -> cod_mov_cte_reg
+	*												|				----cte----
+	*												|
+	*	cmpl $0, %r10d				| 41 83 fa 00 -> cod_zret_cmpl
+	*	movl <param2>, %eax		| CMD_RET ( param2 )
+	*	jne <label>						|	75 02 -> cod_zret_jne
+	*	leave									|
+	*	ret										| CMD_END ()
+	*												|       
+	**************************************************************/
+		
+		/* Move $cte para %r10d */
+		num_lendian( cod_mov_cte_reg , 2 , 4 , idx0 );
+		retorno = write_commands( cod_mov_cte_reg , SZ_MOV_CTE_REG );
+		
+		if( retorno )
+			return 1;
+		
+		break;
+		
+		case 'p':
+		
+	/*************************************************************
+	* "zret <p0> #" em asm	|	"zret <p0> #" em bytes
+	*												|
+	*	movl <p0>, $r10d			|	44 8b 55 e4 -> cod_mov_parm_reg
+	*	cmpl <p0>, %r10d			| 41 83 fa 00 -> cod_zret_cmpl
+	*	movl <param2>, %eax		| CMD_RET ( param2 )
+	*	jne <label>						|	75 02 -> cod_zret_jne
+	*	leave									|
+	*	ret										| CMD_END ()
+	*												|       
+	**************************************************************/
+		
+		/* Move <p0> para %r10d */
+		retorno = write_commands( cod_mov_parm_reg , SZ_MOV_PARM_REG );
+		
+		if( retorno )
+			return 1;		
+			
+		break;
+		
+		case 'v':
+		
+	/*************************************************************
+	* "zret <vi> #" em asm	|	"zret <vi> #" em bytes
+	*												|
+	*	movl <vi>, $r10d			|	44 8b 55 00 -> cod_mov_var_reg
+	*	cmpl <vi>, %r10d			| 41 83 fa 00 -> cod_zret_cmpl
+	*	movl <param2>, %eax		| CMD_RET ( param2 )
+	*	jne <label>						|	75 02 -> cod_zret_jne
+	*	leave									|
+	*	ret										| CMD_END ()
+	*												|       
+	**************************************************************/
+		
+		/* Move <p0> para %r10d */
+		num_lendian( cod_mov_var_reg , 3 , 1 , idx0 );
+		retorno = write_commands( cod_mov_var_reg , SZ_MOV_VAR_REG );
+		
+		if( retorno )
+			return 1;
+			
+		break;
+		
+		default:
+		
+			return -1;
+		
+	} /* switch */
+	
+	/* Compara %r10d com $0 */
+	retorno = write_commands( cod_zret_cmpl , SZ_ZRET_CMPL );
+	
+	if( retorno )
+		return 1;
+	
+	/* Move <param2> para %eax */
+	retorno = cmd_ret( var1, idx1 );
+	
+	if( retorno )
+		return 1;
+	
+	/* Compara flag com $0 */
+	retorno = write_commands( cod_zret_jne , SZ_ZRET_JNE );
+	
+	if( retorno )
+		return 1;
+		
+	/* Finaliza */
+	return write_commands( cod_end , SZ_END );
+	
+} /* fim da função cmd_zret */
+
 
 
 
