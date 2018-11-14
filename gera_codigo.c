@@ -3,20 +3,43 @@ Aluno: Guilherme Dantas Matrícula: 1713155
 Aluno: Rafael Damazio Matrícula: 1712990
 */
 
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
+/*****************************************************************
+*
+*	gera_codigo.c
+*
+*	Descrição:
+*		Este módulo compila o código da linguagem SBF para
+*		linguagem de máquina.
+*
+*	Autores:
+*		gui	-	Guilherme Dantas
+*		raf -	Rafael Damazio
+*
+*	Versionamento:
+*		Versão     Data			Autores		Descrição
+*		   1		06/11/2018	gui,raf		Início do desenvolvimento
+*		 1.1    08/11/2018  gui,raf		Função gera_codigo
+*		 1.2    13/11/2018  gui				Funções cmd_function,
+*																	write_commands e print_commands
+*
+******************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "gera_codigo.h"
 
 #define DIM_VT_CODIGO 1024
+#define PRINT_HEX_PER_LINE 8
 
-/* Protótipos das funções encapsuladas pelo módulo */
+/********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
-static int write_commands ( void *code, unsigned char *commands, size_t bytes );
-static void cmd_function ( void *code );
+static void print_commands( unsigned char *code );
+static int write_commands ( unsigned char *code, unsigned char *commands, size_t bytes );
+static void cmd_function ( unsigned char *code );
 
-/* Código de máquina das variáveis */
+/***************** Código de máquina das variáveis *****************/
 
 unsigned char cod_function[] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xed,0x20}; //Inicia a pilha
 
@@ -57,14 +80,20 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
 
   int line = 1;
   int  c;
-
-	*code = (unsigned char *) malloc(DIM_VT_CODIGO);
+  
+  unsigned char * pCode = ( unsigned char * ) *code;
+  
+	pCode = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
 		 custo (em código de máquina), que é a soma (SBF).
 		 Custa 21 bytes. Com o máximo de 50 linhas...
 		 1050, que é bem próximo de 1024 (o arredondamento
 		 pode ser feito pois é absurdo o programa só ter
 		 operações aritméticas) */
+
+	if( pCode == NULL ) {
+		error("Memoria insuficiente!",0);
+	}
 
   while ((c = fgetc(f)) != EOF) {
     switch (c) {
@@ -131,27 +160,69 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   return;
 }
 
-/* Funções encapsuladas pelo módulo */
+/*************** Funções encapsuladas pelo módulo ***************/
+
+/***************************************************************
+*
+*	error	- Exibe erro
+*
+*	Descrição:
+*		Escreve uma mensagem de erro customizada, indicando
+*		a linha em que ele ocorreu, e para a execução do pgm.
+*
+*	Parâmetros:
+*		msg	  -	string da mensagem de erro
+*		line  -	linha em que erro ocorreu
+*
+****************************************************************/
 
 void error (const char *msg, int line) {
   fprintf(stderr, "erro %s na linha %d\n", msg, line);
   exit(EXIT_FAILURE);
+} /* fim da função error */
+
+/***************************************************************
+*
+*	print_commands	- Imprime o código
+*
+*	Descrição:
+*		Imprime no terminal o código em hexadecimal
+*
+*	Parâmetros:
+*		code  -	vetor com todos os comandos em código de máquina
+*
+****************************************************************/
+
+void print_commands( unsigned char *code ) {
+
+	int i = 0;
+	
+	while( i < byte_corr ) {
+	
+		printf("%.02x ",code[i]);
+		
+		if( i % PRINT_HEX_PER_LINE == PRINT_HEX_PER_LINE - 1 ) {
+			printf("\n");
+		}
+		
+		i++;
+	}
 }
 
 /***************************************************************
 *
-*	write_commands
+*	write_commands	- Escreve comandos
 *
 *	Descrição:
 *		Escreve os bytes de comandos em código de máquina
 *		no vetor code, atualizando o contador de bytes byte_corr.
 *
 *	Parâmetros:
-*		code	  -	vetor com todos os comandos em código de
-*					máquina
+*		code			-	vetor com todos os comandos em código de
+*								máquina
 *		commands  -	vetor com os comandos em código de máquina
-*					que serão escritos
-*		bytes	  -	tamanho do vetor commands
+*								que serão escritos
+*		bytes	  	-	tamanho do vetor commands
 *
 *	Retorno:
 *		0 se escreveu comandos com sucesso
@@ -159,27 +230,28 @@ void error (const char *msg, int line) {
 *
 ****************************************************************/
 
-int write_commands ( void *code, unsigned char *commands, size_t bytes ) {
+int write_commands ( unsigned char *code, unsigned char *commands, size_t bytes ) {
 
-	i = 0;
+	int i = 0;
 	
-	if( byte_corr + bytes > DIM_VT_CODIGO )
-	{
+	if( byte_corr + bytes > DIM_VT_CODIGO ) {
 		return 1;
-	}
+	} /* if */
 	
 	while( bytes-- ) {
 		code[byte_corr] = commands[i];
 		byte_corr++;
 		i++;
-	}
+	} /* while */
 	
 	return 0;
-}
+} /* fim da função write_commands */
 
-void cmd_function ( void *code ) {
+
+
+void cmd_function ( unsigned char *code ) {
 	
-}
+} /* fim da função cmd_function */
 
 
 
