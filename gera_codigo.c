@@ -1,6 +1,6 @@
 /*
-Aluno: Guilherme Dantas	Matrícula: 1713155
-Aluno: Rafael Damazio		Matrícula: 1712990
+Aluno: Guilherme Dantas Matrícula: 1713155
+Aluno: Rafael Damazio Matrícula: 1712990
 */
 
 #include<stdio.h>
@@ -8,10 +8,13 @@ Aluno: Rafael Damazio		Matrícula: 1712990
 #include<string.h>
 #include "gera_codigo.h"
 
+#define DIM_VT_CODIGO 1024
+
 /* Protótipos das funções encapsuladas pelo módulo */
 
 static void error (const char *msg, int line);
-static void cmd_function ( void );
+static int write_commands ( void *code, unsigned char *commands, size_t bytes );
+static void cmd_function ( void *code );
 
 /* Código de máquina das variáveis */
 
@@ -55,7 +58,7 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   int line = 1;
   int  c;
 
-	*code = (unsigned char *) malloc(1024);
+	*code = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
 		 custo (em código de máquina), que é a soma (SBF).
 		 Custa 21 bytes. Com o máximo de 50 linhas...
@@ -135,8 +138,47 @@ void error (const char *msg, int line) {
   exit(EXIT_FAILURE);
 }
 
-void cmd_function ( void ) {
-	//wip
+/***************************************************************
+*
+*	write_commands
+*
+*	Descrição:
+*		Escreve os bytes de comandos em código de máquina
+*		no vetor code, atualizando o contador de bytes byte_corr.
+*
+*	Parâmetros:
+*		code	  -	vetor com todos os comandos em código de
+*					máquina
+*		commands  -	vetor com os comandos em código de máquina
+*					que serão escritos
+*		bytes	  -	tamanho do vetor commands
+*
+*	Retorno:
+*		0 se escreveu comandos com sucesso
+*		1 se extrapolaria limite do vetor code (não escreve)
+*
+****************************************************************/
+
+int write_commands ( void *code, unsigned char *commands, size_t bytes ) {
+
+	i = 0;
+	
+	if( byte_corr + bytes > DIM_VT_CODIGO )
+	{
+		return 1;
+	}
+	
+	while( bytes-- ) {
+		code[byte_corr] = commands[i];
+		byte_corr++;
+		i++;
+	}
+	
+	return 0;
+}
+
+void cmd_function ( void *code ) {
+	
 }
 
 
