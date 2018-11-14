@@ -9,7 +9,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *
 *	Descrição:
 *		Este módulo compila o código da linguagem SBF para
-*		linguagem de máquina.
+*		linguagem de máquina um por vez.
 *
 *	Autores:
 *		gui	-	Guilherme Dantas
@@ -29,19 +29,25 @@ Aluno: Rafael Damazio Matrícula: 1712990
 #include <string.h>
 #include "gera_codigo.h"
 
+#define _DEBUG
+
 #define DIM_VT_CODIGO 1024
 #define PRINT_HEX_PER_LINE 8
+
+#define SZ_FUNCTION 11
 
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
-static void print_commands( unsigned char *code );
-static int write_commands ( unsigned char *code, unsigned char *commands, size_t bytes );
-static void cmd_function ( unsigned char *code );
+static void print_commands( void );
+static void print_headers( void );
+static int write_commands ( unsigned char *commands, size_t bytes );
+static int cmd_function ( void );
 
 /***************** Código de máquina das variáveis *****************/
 
-unsigned char cod_function[] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xed,0x20}; //Inicia a pilha
+unsigned char cod_function[SZ_FUNCTION] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x89,0x7d,0xe4};
+// Inicia a pilha e armazena %edi
 
 unsigned char cod_mov_var_reg[] = {0x44,0x8b,0x55,0x00}; // move para %r10d o valor da  variavel 00-indice
 unsigned char cod_mov_cte_reg[] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
@@ -76,12 +82,21 @@ unsigned int  qtd_func     = 0 ;
 unsigned int  byte_corr    = 0 ;
 /* code[byte_corr] é o byte corrente */
 
+unsigned char * pCode = NULL;
+/* ponteiro global que aponta para o código
+   Como nosso módulo opera apenas com um código
+   por vez, esta implementação é o suficiente. */
+
 void gera_codigo (FILE *f, void **code, funcp *entry) {
 
   int line = 1;
   int  c;
   
-  unsigned char * pCode = ( unsigned char * ) *code;
+  if( code == NULL ) {
+  	error("Vetor nulo fornecido a funcao que gera codigo",0);
+  }
+  
+  pCode = ( unsigned char * ) *code;
   
 	pCode = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
@@ -92,7 +107,7 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
 		 operações aritméticas) */
 
 	if( pCode == NULL ) {
-		error("Memoria insuficiente!",0);
+		error("Memoria insuficiente para alocar vetor de comandos!",0);
 	}
 
   while ((c = fgetc(f)) != EOF) {
@@ -101,9 +116,18 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
         char c0;
         if (fscanf(f, "unction%c", &c0) != 1)
           error("comando invalido", line);
-        printf("function\n");
-        // prepara a pilha
-        
+        	printf("function\n");
+        	if( cmd_function() )
+        		error("Memoria insuficiente!", line);
+        		
+        	#ifdef _DEBUG
+        	printf("\n>>> Cabeçalhos:\n");
+        	print_headers();
+        	printf("\n>>> Comandos:\n");
+        	print_commands();
+        	printf("\n");
+        	#endif
+        	
         break;
       }
       case 'e': { /* end */
@@ -186,28 +210,59 @@ void error (const char *msg, int line) {
 *	print_commands	- Imprime o código
 *
 *	Descrição:
-*		Imprime no terminal o código em hexadecimal
-*
-*	Parâmetros:
-*		code  -	vetor com todos os comandos em código de máquina
+*		Imprime no terminal o código em hexadecimal.
+*		Serve somente para debug.
 *
 ****************************************************************/
 
-void print_commands( unsigned char *code ) {
+void print_commands( void ) {
 
 	int i = 0;
 	
 	while( i < byte_corr ) {
 	
-		printf("%.02x ",code[i]);
+		printf("%.02x ",pCode[i]);
 		
-		if( i % PRINT_HEX_PER_LINE == PRINT_HEX_PER_LINE - 1 ) {
+		if( i % PRINT_HEX_PER_LINE == PRINT_HEX_PER_LINE - 1 &&
+				i != qtd_func-1  ) {
 			printf("\n");
-		}
+		} /* if */
 		
 		i++;
-	}
-}
+		
+	} /* while */
+	
+} /* fim da função print_commands */
+
+/***************************************************************
+*
+*	print_headers	- Imprime cabeçalhos das funções
+*
+*	Descrição:
+*		Imprime no terminal o endereço dos cabeçalhos das funções
+*		em hexadecimal.
+*		Serve somente para debug.
+*
+****************************************************************/
+
+void print_headers( void ) {
+	
+	int i = 0;
+	
+	while( i < qtd_func ) {
+	
+		printf("%.02x ",end_func[i]);
+		
+		if( i % PRINT_HEX_PER_LINE == PRINT_HEX_PER_LINE - 1 &&
+				i != qtd_func-1 ) {
+			printf("\n");
+		} /* if */
+		
+		i++;
+		
+	} /* while */
+	
+} /* fim da função print_headers */
 
 /***************************************************************
 *
@@ -218,8 +273,6 @@ void print_commands( unsigned char *code ) {
 *		no vetor code, atualizando o contador de bytes byte_corr.
 *
 *	Parâmetros:
-*		code			-	vetor com todos os comandos em código de
-*								máquina
 *		commands  -	vetor com os comandos em código de máquina
 *								que serão escritos
 *		bytes	  	-	tamanho do vetor commands
@@ -230,16 +283,20 @@ void print_commands( unsigned char *code ) {
 *
 ****************************************************************/
 
-int write_commands ( unsigned char *code, unsigned char *commands, size_t bytes ) {
+int write_commands ( unsigned char *commands, size_t bytes ) {
 
 	int i = 0;
+	
+	if( pCode == NULL ) {
+		error("Ponteiro nulo!",0);
+	}
 	
 	if( byte_corr + bytes > DIM_VT_CODIGO ) {
 		return 1;
 	} /* if */
 	
 	while( bytes-- ) {
-		code[byte_corr] = commands[i];
+		pCode[byte_corr] = commands[i];
 		byte_corr++;
 		i++;
 	} /* while */
@@ -247,9 +304,35 @@ int write_commands ( unsigned char *code, unsigned char *commands, size_t bytes 
 	return 0;
 } /* fim da função write_commands */
 
+/***************************************************************
+*
+*	cmd_function	- Compilar lexema "function"
+*
+*	Descrição:
+*		Cria a pilha da chamada da função, e move os valores
+*		dos registradores para esta mesma pilha.
+*
+*	Retorno:
+*		0 se escreveu comandos com sucesso
+*		1 se extrapolaria limite do vetor code (não escreve)
+*
+****************************************************************/
 
-
-void cmd_function ( unsigned char *code ) {
+int cmd_function ( void ) {
+	
+	/*************************************************************
+	* "function" em asm			|	"function" em bytes
+	*												|
+	*	pushq %rbp						|	55
+	*	movq %rsp, %rbp				| 48 89 e5
+	*	subq $32, %rsp				| 48 83 ec 20
+	*	movl %edi, -28(%rbp)	| 89 7d e4
+	*												|
+	**************************************************************/
+	
+	end_func[qtd_func] = byte_corr;
+	qtd_func++;
+	return write_commands( cod_function , SZ_FUNCTION );
 	
 } /* fim da função cmd_function */
 
