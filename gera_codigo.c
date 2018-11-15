@@ -23,6 +23,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
 *																	num_lendian, cmd_zret
 *		 1.4		14/11/2018	gui				entry aponta para última função
+*        1.5    15/11/2018 raf				Funções cmd_call e cmd_opr
 *
 ******************************************************************/
 
@@ -46,6 +47,18 @@ Aluno: Rafael Damazio Matrícula: 1712990
 #define SZ_ZRET_JNE 2
 #define SZ_MOV_PARM_REG 4
 #define SZ_MOV_VAR_REG 4
+#define SZ_MOV_CTE_PARM 5
+#define SZ_MOV_VAR_PARM 3
+#define SZ_CALL 8
+#define SZ_MOV_CTE_REG 6
+#define SZ_MOV_VAR_REG 4
+#define SZ_OPR_ADD_CTE_REG 7
+#define SZ_OPR_ADD_VAR_REG 4
+#define SZ_OPR_SUB_CTE_REG 7
+#define SZ_OPR_SUB_VAR_REG 4
+#define SZ_OPR_MULT_CTE_REG 7
+#define SZ_OPR_MULT_VAR_REG 4
+#define SZ_OPR_MOV_REG_VAR 5 
 
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
@@ -67,22 +80,22 @@ static unsigned char cod_function[SZ_FUNCTION] = {0x55,0x48,0x89,0xe5,0x48,0x83,
 static unsigned char cod_mov_parm_reg[SZ_MOV_PARM_REG] = {0x44,0x8b,0x55,0xe4};
 static unsigned char cod_mov_var_reg[SZ_MOV_VAR_REG] = {0x44,0x8b,0x55,0x00}; // move para %r10d o valor da  variavel 00-indice
 static unsigned char cod_mov_cte_reg[SZ_MOV_CTE_REG] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
-static unsigned char cod_mov_reg_var[] = {0x44,0x89,0x55,0x00}; // move para 00-indice da variavel, o valor de %r10d     
+static unsigned char cod_mov_reg_var[SZ_OPR_MOV_REG_VAR] = {0x44,0x89,0x55,0x00}; // move para 00-indice da variavel, o valor de %r10d     
 
-static unsigned char cod_mov_cte_parm[] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
-static unsigned char cod_mov_var_parm[] = {0x8b,0x7d,0x00}; // move para %edi, a variavel 00-indice da memoria
+static unsigned char cod_mov_cte_parm[SZ_MOV_CTE_PARM] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
+static unsigned char cod_mov_var_parm[SZ_MOV_VAR_PARM] = {0x8b,0x7d,0x00}; // move para %edi, a variavel 00-indice da memoria
 static unsigned char cod_mov_parm_pilha[] = {0x89,0x7d,0xe4}; // move %edi para a posição de memoria -28(%rbp)
 
-static unsigned char cod_opr_add_cte_reg[] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00}; // adiciona a constante 00 00 00 00 em %r10d
-static unsigned char cod_opr_add_var_reg[] = {0x44,0x03,0x55,0x00}; // adiciona em %r10d o valor da variavel 00-indice
+static unsigned char cod_opr_add_cte_reg[SZ_OPR_ADD_CTE_REG] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00}; // adiciona a constante 00 00 00 00 em %r10d
+static unsigned char cod_opr_add_var_reg[OPR_ADD_VAR_REG] = {0x44,0x03,0x55,0x00}; // adiciona em %r10d o valor da variavel 00-indice
 
-static unsigned char cod_opr_sub_cte_reg[] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00}; // subtrai o valor da constante 00 00 00 00 em %r10d
-static unsigned char cod_opr_sub_var_reg[] = {0x44,0x2b,0x55,0x00}; // subtrai o valor da variavel 00-indice em %r10d
+static unsigned char cod_opr_sub_cte_reg[SZ_OPR_SUB_CTE_REG] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00}; // subtrai o valor da constante 00 00 00 00 em %r10d
+static unsigned char cod_opr_sub_var_reg[SZ_OPR_SUB_VAR_REG] = {0x44,0x2b,0x55,0x00}; // subtrai o valor da variavel 00-indice em %r10d
 
-static unsigned char cod_opr_mult_cte_reg[] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; // multiplica o valor de %r10d pela constante 00 00 00 00 
-static unsigned char cod_opr_mult_var_reg[] = {0x44,0x0f,0xaf,0x55,0x00}; // multiplica o valor de %r10d pela variavel 00-indice
+static unsigned char cod_opr_mult_cte_reg[SZ_OPR_MULT_CTE_REG] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; // multiplica o valor de %r10d pela constante 00 00 00 00 
+static unsigned char cod_opr_mult_var_reg[SZ_OPR_MULT_VAR_REG] = {0x44,0x0f,0xaf,0x55,0x00}; // multiplica o valor de %r10d pela variavel 00-indice
 
-static unsigned char cod_call[] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM / gera o call, e move %eax para a variavel 00-indice*/
+static unsigned char cod_call[SZ_CALL] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM / gera o call, e move %eax para a variavel 00-indice*/
 static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00}; // move constante 00 00 00 00 para %eax
 static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};// move -28(%edi) para %eax (este caso provavelmente não será usado)
 static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00}; // move constante variavel 00-indice para %eax
@@ -684,6 +697,127 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	return write_commands( cod_end , SZ_END );
 	
 } /* fim da função cmd_zret */
+
+/***************************************************************
+*
+*	cmd_call	- Compilar lexema "call"
+*
+*	Descrição:
+		Move o parametro passado, seja constante ou variavel para %edi
+*		Chama outra função previamente declarada e move o resultado
+*		para a variavel que recebe o retorno da função chamada
+*
+*	Assertivas de Entrada:
+*		Assume que os parâmetros são válidos, isto é,
+*		para var = 'p', idx = 0 e para var = 'v',
+*		idx pertence ao conjunto {0,1,2,3,4} ,
+*		para var = '$', idx deve estar dentro dos limtes de INT.
+*		Caso esta AE seja descumprida, -1 será retornado.
+*
+*	Retorno:
+*		Acompanha o retorno de write_commands
+*
+****************************************************************/
+
+int cmd_call(char var0, int idx0, int func, char var1, int idx1){
+	int retorno;
+	switch(var1){
+		case '$':
+			num_lendian(cod_mov_cte_parm, 1, 4, idx1);
+			retorno = write_commands(cod_mov_cte_parm, SZ_MOV_CTE_PARM);
+			break;
+		case 'v':
+			num_lendian(cod_mov_var_parm, 2, 1, -(idx1*4));
+			retorno = write_commands(cod_mov_var_parm,SZ_MOV_VAR_PARM);
+			break
+		default:
+			return -1;
+	}/* switch(var1) */
+	if (retorno) return retorno;
+	num_lendian(cod_call, 1, 4, byte_corr-end_func[func]);
+	num_lendian(cod_call, 7, 1, -(idx0*4));
+	return write_commands(cod_call,SZ_CALL);
+}/* Fim da função cmd_call */
+/***************************************************************
+*
+*	cmd_opr	- Compila todas as operações aritiméticas
+*
+*	Descrição:
+		Reconhece a operação e os operandos, e compila os resultados
+*
+*	Assertivas de Entrada:
+*		Assume que os parâmetros são válidos, isto é,
+*		para var = 'p', idx = 0 e para var = 'v',
+*		idx pertence ao conjunto {0,1,2,3,4} ,
+*		para var = '$', idx deve estar dentro dos limtes de INT.
+*		Caso esta AE seja descumprida, -1 será retornado.
+*
+*	Retorno:
+*		Acompanha o retorno de write_commands
+*
+****************************************************************/
+int cmd_opr(char var0, int idx0, char var1, int idx1, char op, char var2, int idx2){
+	int retorno;
+	switch (var1){
+		case '$':
+			num_lendian(cod_mov_cte_reg, 2, 4, idx1);
+			retorno = write_commands(cod_mov_cte_reg, SZ_MOV_CTE_REG);
+			break;
+		case 'v':
+			num_lendian(cod_mov_var_reg, 3, 1, -(idx1*4));
+			retorno = write_commands(cod_mov_var_reg, SZ_MOV_VAR_REG);
+			break;
+		default:
+			return -1;
+	}/* switch(var1) */
+	switch (op){
+		case '+':
+			switch(var2){
+				case '$':
+					num_lendian(cod_opr_add_cte_reg, 3, 4, idx2);
+					retorno = write_commands(cod_opr_add_cte_reg, SZ_OPR_ADD_CTE_REG);
+					break;
+				case 'v':
+					num_lendian(cod_opr_add_var_reg, 3, 1, -(idx2*4));
+					retorno = write_commands(cod_opr_add_var_reg, SZ_OPR_ADD_VAR_REG);
+					break;
+				default:
+					return -1;
+			}/* switch(var2) */
+		case '-':
+			switch(var2){
+				case '$':
+					num_lendian(cod_opr_sub_cte_reg, 3, 4, idx2);
+					retorno = write_commands(cod_opr_sub_cte_reg, SZ_OPR_SUB_CTE_REG);
+					break;
+				case 'v':
+					num_lendian(cod_opr_sub_var_reg, 3, 1, -(idx2*4));
+					retorno = write_commands(cod_opr_sub_var_reg, SZ_OPR_SUB_VAR_REG);
+					break;
+				default:
+					return -1;
+				}/* switch(var2) */
+		case '*':
+			switch(var2){
+				case '$':
+					num_lendian(cod_opr_mult_cte_reg, 3, 4, idx2);
+					retorno = write_commands(cod_opr_mult_cte_reg, SZ_OPR_MULT_CTE_REG);
+					break;
+				case 'v':
+					num_lendian(cod_opr_mult_var_reg, 4, 1, -(idx2*4));
+					retorno = write_commands(cod_opr_MULT_var_reg, SZ_OPR_MULT_VAR_REG);
+					break;
+				default:
+					return -1;
+			}/* switch(var2) */
+		default:
+			return -1
+	}/* switch(op) */
+	
+	if(retorno) return retorno;
+	num_lendian(cod_mov_reg_var, 3, 1, -(idx0*4));
+	return write_commands(cod_mov_reg_var, SZ_MOV_REG_VAR);
+}/* Fim da função cmd_opr */
 
 
 

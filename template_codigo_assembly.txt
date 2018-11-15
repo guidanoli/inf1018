@@ -102,15 +102,7 @@ OBS: ESQUECEMOS DE CONSIDERAR O MOVIMENTO DO R10 PRA MEMORIA E O RETORNO NO FINA
 DISCUTIR A UTILIZAÇÃO DO PARAMETRO -- SEMPRE NA MEMORIA OU NÃO
 
 PILHA = 32 bytes 
-		    --32
-		|r10|
-		|r10|
-		|r10|
-		|r10|
-		|r10|
-		|r10|
-		|r10|
-		|r10|
+
 		    --28
 		|p0|
 		|p0|
