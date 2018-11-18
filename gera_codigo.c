@@ -17,13 +17,13 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *
 *	Versionamento:
 *		Versão     Data			Autores		Descrição
-*		   1		06/11/2018	gui,raf		Início do desenvolvimento
+*		 1.0		06/11/2018	gui,raf		Início do desenvolvimento
 *		 1.1    08/11/2018  gui,raf		Estrutura da função gera_codigo
 *		 1.2    13/11/2018  gui				Funções write_commands e print_commands
 *		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
 *																	num_lendian, cmd_zret
 *		 1.4		14/11/2018	gui				entry aponta para última função
-*        1.5    15/11/2018 raf				Funções cmd_call e cmd_opr
+*    1.5    15/11/2018  raf       Funções cmd_call e cmd_opr
 *
 ******************************************************************/
 
@@ -60,6 +60,8 @@ Aluno: Rafael Damazio Matrícula: 1712990
 #define SZ_OPR_MULT_VAR_REG 4
 #define SZ_OPR_MOV_REG_VAR 5 
 
+#define f_offset(f_id) (end_func[f_id] - byte_corr + 5)
+
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
@@ -95,7 +97,7 @@ static unsigned char cod_opr_sub_var_reg[SZ_OPR_SUB_VAR_REG] = {0x44,0x2b,0x55,0
 static unsigned char cod_opr_mult_cte_reg[SZ_OPR_MULT_CTE_REG] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; // multiplica o valor de %r10d pela constante 00 00 00 00 
 static unsigned char cod_opr_mult_var_reg[SZ_OPR_MULT_VAR_REG] = {0x44,0x0f,0xaf,0x55,0x00}; // multiplica o valor de %r10d pela variavel 00-indice
 
-static unsigned char cod_call[SZ_CALL] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /*MOVER PARAMETRO ANTES!! COD_MOV_CTE_PARM ou COD_MOV_VAR_PARM / gera o call, e move %eax para a variavel 00-indice*/
+static unsigned char cod_call[SZ_CALL] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /* Mover param p/ %edi! / gera o call, e move %eax para a variavel 00-indice*/
 static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00}; // move constante 00 00 00 00 para %eax
 static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};// move -28(%edi) para %eax (este caso provavelmente não será usado)
 static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00}; // move constante variavel 00-indice para %eax
@@ -515,6 +517,12 @@ int cmd_end ( void ) {
 *		para var = '$', idx deve estar dentro dos limtes de INT.
 *		Caso esta AE seja descumprida, -1 será retornado.
 *
+* Parâmetros:
+*   Os parâmetros são os fragmentos da sintaxe de retorno
+*   incondicional da linguagem SBF:
+*
+*   ret <var><idx>
+*
 *	Retorno:
 *		0 se escreveu comandos com sucesso
 *		-1 se os parâmetros são inválidos.
@@ -583,6 +591,12 @@ int cmd_ret ( char var, int idx ) {
 *		idx pertence ao conjunto {0,1,2,3,4} ,
 *		para var = '$', idx deve estar dentro dos limtes de INT.
 *		Caso esta AE seja descumprida, -1 será retornado.
+*
+* Parâmetros:
+*   Os parâmetros são os fragmentos da sintaxe de retorno
+*   condicional da linguagem SBF:
+*
+*   zret <var0><idx0> <var1><idx1>
 *
 *	Retorno:
 *		0 se escreveu comandos com sucesso
@@ -703,9 +717,97 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 *	cmd_call	- Compilar lexema "call"
 *
 *	Descrição:
-		Move o parametro passado, seja constante ou variavel para %edi
+*   Move o parametro passado, seja constante ou variavel para %edi
 *		Chama outra função previamente declarada e move o resultado
-*		para a variavel que recebe o retorno da função chamada
+*		para a variavel que recebe o retorno da função chamada.
+*
+*	Assertivas de Entrada:
+*		Assume que os parâmetros são válidos, isto é,
+*		para var = 'p', idx = 0 e para var = 'v',
+*		idx pertence ao conjunto {0,1,2,3,4} ,
+*		para var = '$', idx deve estar dentro dos limtes de INT.
+*   Assume também que função exista.
+*		Caso esta AE seja descumprida, -1 será retornado.
+*
+* Parâmetros:
+*   Os parâmetros são os fragmentos da sintaxe de chamada
+*   de função da linguagem SBF:
+*
+*   <var0><idx0> = call <func> <var1><idx1>
+*
+*	Retorno:
+*		0 se escreveu comandos com sucesso
+*		-1 se os parâmetros são inválidos.
+*		1 se extrapolaria limite do vetor code (não escreve)
+*
+****************************************************************/
+
+int cmd_call(char var0, int idx0, int func, char var1, int idx1){
+
+	int retorno;
+	
+	switch(var1){
+	
+		case '$':
+		
+	/*************************************************************
+	* mover cte p/ %edi em asm	|	mover cte p/ %edi em bytes
+	*                           |
+	* movl $cte, %edi           | bf 00 00 00 00 -> cod_mov_cte_parm
+	*                           |    ----cte----
+	*                           |
+	**************************************************************/
+		
+			num_lendian(cod_mov_cte_parm, 1, 4, idx1);
+			retorno = write_commands(cod_mov_cte_parm, SZ_MOV_CTE_PARM);
+			break;
+			
+		case 'v':
+		
+	/*************************************************************
+	* mover v1 p/ %edi em asm   | mover v1 p/ %edi em bytes
+	*                           |
+	* movl <v1>, %edi           | 8b 7d 00 -> cod_mov_var_parm
+	*                           |       off = -4*(idx+1)
+	**************************************************************/
+		
+			num_lendian(cod_mov_var_parm, 2, 1, -4*(idx1+1));
+			retorno = write_commands(cod_mov_var_parm,SZ_MOV_VAR_PARM);
+			break
+			
+		default:
+			return -1;
+			
+	} /* switch */
+	
+	if (retorno)
+	  return 1;
+	
+	/*************************************************************
+	* chamar func e armazenar   | chamar func e armazenar
+	* retorno em <v0> em asm    | retorno em <v1> em bytes
+	*                           |
+	* call <func-label>         | e8 00 00 00 00
+	*                           |    off = end_func[func]-byte_corr+5
+	*                           |
+	* movl %eax, <v0>           | 89 45 00
+	*                           |       off = -4*(idx+1)
+	*                           |
+	**************************************************************/
+	
+	num_lendian(cod_call, 1, 4, f_offset(func) );
+	num_lendian(cod_call, 7, 1, -4*(idx0+1) );
+	
+	return write_commands(cod_call,SZ_CALL);
+	
+} /* Fim da função cmd_call */
+
+/***************************************************************
+*
+*	cmd_opr	- Compila todas as operações aritiméticas
+*
+*	Descrição:
+*	Reconhece a operação e os operandos, e compila os resultados
 *
 *	Assertivas de Entrada:
 *		Assume que os parâmetros são válidos, isto é,
@@ -719,43 +821,6 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 *
 ****************************************************************/
 
-int cmd_call(char var0, int idx0, int func, char var1, int idx1){
-	int retorno;
-	switch(var1){
-		case '$':
-			num_lendian(cod_mov_cte_parm, 1, 4, idx1);
-			retorno = write_commands(cod_mov_cte_parm, SZ_MOV_CTE_PARM);
-			break;
-		case 'v':
-			num_lendian(cod_mov_var_parm, 2, 1, -(idx1*4));
-			retorno = write_commands(cod_mov_var_parm,SZ_MOV_VAR_PARM);
-			break
-		default:
-			return -1;
-	}/* switch(var1) */
-	if (retorno) return retorno;
-	num_lendian(cod_call, 1, 4, byte_corr-end_func[func]);
-	num_lendian(cod_call, 7, 1, -(idx0*4));
-	return write_commands(cod_call,SZ_CALL);
-}/* Fim da função cmd_call */
-/***************************************************************
-*
-*	cmd_opr	- Compila todas as operações aritiméticas
-*
-*	Descrição:
-		Reconhece a operação e os operandos, e compila os resultados
-*
-*	Assertivas de Entrada:
-*		Assume que os parâmetros são válidos, isto é,
-*		para var = 'p', idx = 0 e para var = 'v',
-*		idx pertence ao conjunto {0,1,2,3,4} ,
-*		para var = '$', idx deve estar dentro dos limtes de INT.
-*		Caso esta AE seja descumprida, -1 será retornado.
-*
-*	Retorno:
-*		Acompanha o retorno de write_commands
-*
-****************************************************************/
 int cmd_opr(char var0, int idx0, char var1, int idx1, char op, char var2, int idx2){
 	int retorno;
 	switch (var1){
@@ -817,7 +882,7 @@ int cmd_opr(char var0, int idx0, char var1, int idx1, char op, char var2, int id
 	if(retorno) return retorno;
 	num_lendian(cod_mov_reg_var, 3, 1, -(idx0*4));
 	return write_commands(cod_mov_reg_var, SZ_MOV_REG_VAR);
-}/* Fim da função cmd_opr */
+} /* Fim da função cmd_opr */
 
 
 
