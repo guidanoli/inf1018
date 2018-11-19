@@ -24,6 +24,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *																	num_lendian, cmd_zret
 *		 1.4		14/11/2018	gui				entry aponta para última função
 *    1.5    15/11/2018  raf       Funções cmd_call e cmd_opr
+*    1.6    18/11/2018  gui       Fixes
 *
 ******************************************************************/
 
@@ -32,83 +33,93 @@ Aluno: Rafael Damazio Matrícula: 1712990
 #include <string.h>
 #include "gera_codigo.h"
 
-#define _DEBUG
-
 #define DIM_VT_CODIGO 1024
 #define PRINT_HEX_PER_LINE 8
+#define MAX_LINES 50
 
 #define SZ_FUNCTION 11
 #define SZ_END 2
 #define SZ_RET_CTE 5
 #define SZ_RET_PARM 3
 #define SZ_RET_VAR 3
-#define SZ_MOV_CTE_REG 6
 #define SZ_ZRET_CMPL 4
 #define SZ_ZRET_JNE 2
 #define SZ_MOV_PARM_REG 4
 #define SZ_MOV_VAR_REG 4
 #define SZ_MOV_CTE_PARM 5
+#define SZ_MOV_REG_VAR 4 
 #define SZ_MOV_VAR_PARM 3
+#define SZ_MOV_PARM_PARM 3
 #define SZ_CALL 8
 #define SZ_MOV_CTE_REG 6
-#define SZ_MOV_VAR_REG 4
 #define SZ_OPR_ADD_CTE_REG 7
 #define SZ_OPR_ADD_VAR_REG 4
+#define SZ_OPR_ADD_PARM_REG 4
 #define SZ_OPR_SUB_CTE_REG 7
 #define SZ_OPR_SUB_VAR_REG 4
+#define SZ_OPR_SUB_PARM_REG 4
 #define SZ_OPR_MULT_CTE_REG 7
-#define SZ_OPR_MULT_VAR_REG 4
-#define SZ_OPR_MOV_REG_VAR 5 
+#define SZ_OPR_MULT_VAR_REG 5
+#define SZ_OPR_MULT_PARM_REG 5
 
-#define f_offset(f_id) (end_func[f_id] - byte_corr + 5)
+#define f_offset(f_id) (end_func[f_id] - byte_corr - 5)
 
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
+
+#ifdef _DEBUG
 static void print_commands ( void );
 static void print_headers ( void );
+#endif
+
 static int write_commands ( unsigned char *commands, size_t bytes );
 static void num_lendian ( unsigned char *commands, size_t pos, size_t bytes, int number );
 static int cmd_function ( void );
 static int cmd_end ( void );
 static int cmd_ret ( char var, int idx );
 static int cmd_zret ( char var0, int idx0, char var1, int idx1 );
+static int cmd_call ( char var0, int idx0, int func, char var1, int idx1 );
+static int cmd_opr ( char var0, int idx0, char var1, int idx1, char op, char var2, int idx2 );
 
 /***************** Código de máquina das variáveis *****************/
 
 static unsigned char cod_function[SZ_FUNCTION] = {0x55,0x48,0x89,0xe5,0x48,0x83,0xec,0x20,0x89,0x7d,0xe4};
-// Inicia a pilha e armazena %edi
-
 static unsigned char cod_mov_parm_reg[SZ_MOV_PARM_REG] = {0x44,0x8b,0x55,0xe4};
-static unsigned char cod_mov_var_reg[SZ_MOV_VAR_REG] = {0x44,0x8b,0x55,0x00}; // move para %r10d o valor da  variavel 00-indice
-static unsigned char cod_mov_cte_reg[SZ_MOV_CTE_REG] = {0x41,0xba,0x00,0x00,0x00,0x00}; // move para %r10d o valor da constante 00 00 00 00 
-static unsigned char cod_mov_reg_var[SZ_OPR_MOV_REG_VAR] = {0x44,0x89,0x55,0x00}; // move para 00-indice da variavel, o valor de %r10d     
-
-static unsigned char cod_mov_cte_parm[SZ_MOV_CTE_PARM] = {0xbf,0x00,0x00,0x00,0x00}; // move para %edi, a constante 00 00 00 00 (little)
-static unsigned char cod_mov_var_parm[SZ_MOV_VAR_PARM] = {0x8b,0x7d,0x00}; // move para %edi, a variavel 00-indice da memoria
-static unsigned char cod_mov_parm_pilha[] = {0x89,0x7d,0xe4}; // move %edi para a posição de memoria -28(%rbp)
-
-static unsigned char cod_opr_add_cte_reg[SZ_OPR_ADD_CTE_REG] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00}; // adiciona a constante 00 00 00 00 em %r10d
-static unsigned char cod_opr_add_var_reg[OPR_ADD_VAR_REG] = {0x44,0x03,0x55,0x00}; // adiciona em %r10d o valor da variavel 00-indice
-
-static unsigned char cod_opr_sub_cte_reg[SZ_OPR_SUB_CTE_REG] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00}; // subtrai o valor da constante 00 00 00 00 em %r10d
-static unsigned char cod_opr_sub_var_reg[SZ_OPR_SUB_VAR_REG] = {0x44,0x2b,0x55,0x00}; // subtrai o valor da variavel 00-indice em %r10d
-
-static unsigned char cod_opr_mult_cte_reg[SZ_OPR_MULT_CTE_REG] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00}; // multiplica o valor de %r10d pela constante 00 00 00 00 
-static unsigned char cod_opr_mult_var_reg[SZ_OPR_MULT_VAR_REG] = {0x44,0x0f,0xaf,0x55,0x00}; // multiplica o valor de %r10d pela variavel 00-indice
-
-static unsigned char cod_call[SZ_CALL] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00}; /* Mover param p/ %edi! / gera o call, e move %eax para a variavel 00-indice*/
-static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00}; // move constante 00 00 00 00 para %eax
-static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};// move -28(%edi) para %eax (este caso provavelmente não será usado)
-static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00}; // move constante variavel 00-indice para %eax
-
-static unsigned char cod_zret_cmpl[SZ_ZRET_CMPL] = {0x41,0x83,0xfa,0x00}; // sempre trabalha com %r10d e com o mesmo label
+static unsigned char cod_mov_var_reg[SZ_MOV_VAR_REG] = {0x44,0x8b,0x55,0x00};
+static unsigned char cod_mov_cte_reg[SZ_MOV_CTE_REG] = {0x41,0xba,0x00,0x00,0x00,0x00};
+static unsigned char cod_mov_reg_var[SZ_MOV_REG_VAR] = {0x44,0x89,0x55,0x00};
+static unsigned char cod_mov_cte_parm[SZ_MOV_CTE_PARM] = {0xbf,0x00,0x00,0x00,0x00};
+static unsigned char cod_mov_var_parm[SZ_MOV_VAR_PARM] = {0x8b,0x7d,0x00};
+static unsigned char cod_mov_parm_parm[SZ_MOV_PARM_PARM] = {0x8b,0x7d,0xe4};
+static unsigned char cod_opr_add_cte_reg[SZ_OPR_ADD_CTE_REG] = {0x41,0x81,0xc2,0x00,0x00,0x00,0x00};
+static unsigned char cod_opr_add_var_reg[SZ_OPR_ADD_VAR_REG] = {0x44,0x03,0x55,0x00};
+static unsigned char cod_opr_add_parm_reg[SZ_OPR_ADD_PARM_REG] = {0x44,0x03,0x55,0xe4};
+static unsigned char cod_opr_sub_cte_reg[SZ_OPR_SUB_CTE_REG] = {0x41,0x81,0xea,0x00,0x00,0x00,0x00};
+static unsigned char cod_opr_sub_var_reg[SZ_OPR_SUB_VAR_REG] = {0x44,0x2b,0x55,0x00};
+static unsigned char cod_opr_sub_parm_reg[SZ_OPR_SUB_PARM_REG] = {0x44,0x2b,0x55,0xe4};
+static unsigned char cod_opr_mult_cte_reg[SZ_OPR_MULT_CTE_REG] = {0x45,0x69,0xd2,0x00,0x00,0x00,0x00};
+static unsigned char cod_opr_mult_var_reg[SZ_OPR_MULT_VAR_REG] = {0x44,0x0f,0xaf,0x55,0x00};
+static unsigned char cod_opr_mult_parm_reg[SZ_OPR_MULT_PARM_REG] = {0x44,0x0f,0xaf,0x55,0xe4};
+static unsigned char cod_call[SZ_CALL] = {0xe8,0x00,0x00,0x00,0x00,0x89,0x45,0x00};
+static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00};
+static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};
+static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00};
+static unsigned char cod_zret_cmpl[SZ_ZRET_CMPL] = {0x41,0x83,0xfa,0x00};
 static unsigned char cod_zret_jne[SZ_ZRET_JNE] = {0x75,0x02};
+static unsigned char cod_end[SZ_END] = {0xc9,0xc3};
 
-static unsigned char cod_end[SZ_END] = {0xc9,0xc3}; // Desfaz a pilha e retorna ao ultimo endereço
+/***************** Variáveis globais *****************/
 
-static unsigned char end_func[50] = {};
+static unsigned int end_func[MAX_LINES] = {};
+/* vetor de posições para cabeçalhos de
+   funções. Como o código trabalha com
+   arquivos de no máximo 50 linhas, o vetor
+   comporta 50 cabeçalhos no máximo. */
+
 static unsigned int  qtd_func     = 0 ;
+/* quantidade de funcoes lidas num determinado
+   arquivo */
 
 static unsigned int  byte_corr    = 0 ;
 /* code[byte_corr] é o byte corrente */
@@ -117,6 +128,23 @@ static unsigned char * pCode = NULL;
 /* ponteiro global que aponta para o código
    Como nosso módulo opera apenas com um código
    por vez, esta implementação é o suficiente. */
+
+/***************************************************************
+*
+*	libera_codigo - Libera espaço alocado na geração de código
+*
+*	Assertivas de Saída:
+*		Caso o código exista, é desalocado. Caso contrário,
+*   nada é feito.
+*
+*	Parâmetros:
+*		p - ponteiro para código
+*
+****************************************************************/
+
+void libera_codigo (void *p) {
+  free(p);
+} /* Fim da função libera_codigo */
 
 /***************************************************************
 *
@@ -135,8 +163,10 @@ static unsigned char * pCode = NULL;
 *	Assertivas de Saída:
 *		Caso ocorra algum erro, o programa será interrompido.
 *		Caso contrário, code apontará para vetor de comandos,
-*		e entry apontará para última função. f apontará para
-*		o último caractere do arquivo. O arquivo não é fechado!
+*		e entry apontará para última função, caso exista. Caso
+*   o programa não tiver funções, *entry = NULL.
+*   O ponteiro de arquivo aponta para o fim do arquivo.
+*   O arquivo não é fechado!
 *
 *	Parâmetros:
 *		f			-	fluxo de entrada
@@ -147,6 +177,7 @@ static unsigned char * pCode = NULL;
 
 void gera_codigo (FILE *f, void **code, funcp *entry) {
 	
+	int ret;
   int line = 1;
   int  c;
   
@@ -154,7 +185,15 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   	error("Vetor nulo fornecido a funcao que gera codigo",0);
   }
   
+  byte_corr = 0;
+  qtd_func = 0;
   *code = NULL;
+  
+  if( pCode != NULL )
+  {
+    free(pCode);
+    pCode = NULL;
+  }
   
 	pCode = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
@@ -205,8 +244,8 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
         break;
       }
       case 'r': {  /* retorno incondicional */
-        int idx0, idx1, ret;
-        char var0, var1;
+        int idx0;
+        char var0;
         if (fscanf(f, "et %c%d", &var0, &idx0) != 2) 
           error("comando invalido", line);
         printf("ret %c%d\n", var0, idx0);
@@ -225,7 +264,7 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
         break;
       }
       case 'z': {  /* retorno condicional */
-        int idx0, idx1, ret;
+        int idx0, idx1;
         char var0, var1;
         if (fscanf(f, "ret %c%d %c%d", &var0, &idx0, &var1, &idx1) != 4) 
           error("comando invalido", line);
@@ -256,6 +295,18 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
           if (fscanf(f, "all %d %c%d\n", &func, &var1, &idx1) != 3)
             error("comando invalido",line);
           printf("%c%d = call %d %c%d\n",var0, idx0, func, var1, idx1);
+          ret = cmd_call( var0, idx0, func, var1, idx1 );
+          if( ret == 1 )
+          	error("Memoria insuficiente!", line);
+          else if( ret == -1 )
+          	error("Parametros invalidos!", line);
+          
+          #ifdef _DEBUG
+        	printf("\n>>> Comandos:\n");
+        	print_commands();
+        	printf("\n\n");
+        	#endif
+          
         }
         else { /* operação aritmética */
           int idx1, idx2;
@@ -263,20 +314,41 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
           if (fscanf(f, "%d %c %c%d", &idx1, &op, &var2, &idx2) != 4)
             error("comando invalido", line);
           printf("%c%d = %c%d %c %c%d\n",
-                var0, idx0, var1, idx1, op, var2, idx2);
+          var0, idx0, var1, idx1, op, var2, idx2);
+          ret = cmd_opr( var0, idx0, var1, idx1, op, var2, idx2 );
+          if( ret == 1 )
+          	error("Memoria insuficiente!", line);
+          else if( ret == -1 )
+          	error("Parametros invalidos!", line);
+          
+          #ifdef _DEBUG
+        	printf("\n>>> Comandos:\n");
+        	print_commands();
+        	printf("\n\n");
+        	#endif
+                
         }
         break;
       }
       default: error("comando desconhecido", line);
     }
     line ++;
+    
+    #ifdef _DEBUG
+    printf("\nbyte_corr = %d\n",byte_corr);
+    #endif
+    
     fscanf(f, " ");
-    
-    *code = (void *) pCode;
-    
-    /* A última função será apontada por entry */
-    *entry = (funcp) (pCode + end_func[ qtd_func - 1 ]);
   }
+  
+  *code = (void *) pCode;
+    
+  /* A última função será apontada por entry */
+  if( qtd_func == 0 )
+    *entry = NULL;
+  else
+    *entry = (funcp) (pCode + end_func[ qtd_func - 1 ]);
+  
   return;
 }
 
@@ -345,6 +417,7 @@ void num_lendian ( unsigned char *commands, size_t pos, size_t bytes, int number
 	
 } /* fim da função num_lendian */
 
+#ifdef _DEBUG
 /***************************************************************
 *
 *	print_commands	- Imprime o código
@@ -403,6 +476,7 @@ void print_headers( void ) {
 	} /* while */
 	
 } /* fim da função print_headers */
+#endif
 
 /***************************************************************
 *
@@ -742,7 +816,7 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 *
 ****************************************************************/
 
-int cmd_call(char var0, int idx0, int func, char var1, int idx1){
+int cmd_call( char var0, int idx0, int func, char var1, int idx1 ){
 
 	int retorno;
 	
@@ -773,12 +847,24 @@ int cmd_call(char var0, int idx0, int func, char var1, int idx1){
 		
 			num_lendian(cod_mov_var_parm, 2, 1, -4*(idx1+1));
 			retorno = write_commands(cod_mov_var_parm,SZ_MOV_VAR_PARM);
-			break
+			break;
+			
+		case 'p':
+		
+	/*************************************************************
+	* mover p0 p/ %edi em asm   | mover p0 p/ %edi em bytes
+	*                           |
+	* movl <p0>, %edi           | 8b 7d e4 -> cod_mov_parm_parm
+	*                           |
+	**************************************************************/
+		
+			retorno = write_commands(cod_mov_parm_parm,SZ_MOV_PARM_PARM);
+			break;
 			
 		default:
 			return -1;
 			
-	} /* switch */
+	} /* switch(var1) */
 	
 	if (retorno)
 	  return 1;
@@ -795,6 +881,13 @@ int cmd_call(char var0, int idx0, int func, char var1, int idx1){
 	*                           |
 	**************************************************************/
 	
+	#ifdef _DEBUG
+	printf("\nbyte_corr = %d\n",byte_corr);
+	printf("\nend_func[%d] = %d\n",func,end_func[func]);
+	printf("\nOFFSET = %d\n",f_offset(func));
+	printf("\nByte referenced by call operation: %.02x\n",pCode[byte_corr+5+f_offset(func)]);
+	#endif
+	
 	num_lendian(cod_call, 1, 4, f_offset(func) );
 	num_lendian(cod_call, 7, 1, -4*(idx0+1) );
 	
@@ -807,7 +900,7 @@ int cmd_call(char var0, int idx0, int func, char var1, int idx1){
 *	cmd_opr	- Compila todas as operações aritiméticas
 *
 *	Descrição:
-*	Reconhece a operação e os operandos, e compila os resultados
+*	  Reconhece a operação e os operandos, e compila os resultados
 *
 *	Assertivas de Entrada:
 *		Assume que os parâmetros são válidos, isto é,
@@ -816,72 +909,230 @@ int cmd_call(char var0, int idx0, int func, char var1, int idx1){
 *		para var = '$', idx deve estar dentro dos limtes de INT.
 *		Caso esta AE seja descumprida, -1 será retornado.
 *
+* Parâmetros:
+*   Os parâmetros são os fragmentos da sintaxe de atribuição
+*   de resultados de operações matemáticas da linguagem SBF:
+*
+*   <var0><idx0> = <var1><idx1> <op> <var2><idx2>
+*
 *	Retorno:
-*		Acompanha o retorno de write_commands
+*		0 se escreveu comandos com sucesso
+*		-1 se os parâmetros são inválidos.
+*		1 se extrapolaria limite do vetor code (não escreve)
 *
 ****************************************************************/
 
-int cmd_opr(char var0, int idx0, char var1, int idx1, char op, char var2, int idx2){
+int cmd_opr( char var0, int idx0, char var1, int idx1, char op, char var2, int idx2 ){
+
 	int retorno;
+	
 	switch (var1){
+	
 		case '$':
+		
+	/*************************************************************
+	* mover cte p/ reg em asm	  |	mover cte p/ reg em bytes
+	*                           |
+	* movl $cte, %r10d          | 41 ba 00 00 00 00 -> cod_mov_cte_reg
+	*                           |       ----cte----
+	*                           |
+	**************************************************************/
+		
 			num_lendian(cod_mov_cte_reg, 2, 4, idx1);
 			retorno = write_commands(cod_mov_cte_reg, SZ_MOV_CTE_REG);
 			break;
+			
 		case 'v':
-			num_lendian(cod_mov_var_reg, 3, 1, -(idx1*4));
+		
+	/*************************************************************
+	* mover var p/ reg em asm	  |	mover var p/ reg em bytes
+	*                           |
+	* movl <v1>, %r10d          | 44 8b 55 00 -> cod_mov_var_reg
+	*                           |          off = -4*(idx1+1)
+	*                           |
+	**************************************************************/
+		
+			num_lendian(cod_mov_var_reg, 3, 1, -4*(idx1+1));
 			retorno = write_commands(cod_mov_var_reg, SZ_MOV_VAR_REG);
 			break;
+			
+		case 'p':
+		
+	/*************************************************************
+	* mover parm p/ reg em asm |	mover parm p/ reg em bytes
+	*                          |
+	* movl <p0>, %r10d         | 44 8b 55 e4 -> cod_mov_parm_reg
+	*                          |
+	**************************************************************/
+		
+			retorno = write_commands(cod_mov_parm_reg, SZ_MOV_PARM_REG);
+			break;
+			
 		default:
 			return -1;
-	}/* switch(var1) */
+			
+	} /* switch(var1) */
+	
 	switch (op){
+	
 		case '+':
 			switch(var2){
 				case '$':
+				
+	/*************************************************************
+	* adicionar cte à reg em asm | adicionar cte à reg em bytes
+	*                            |
+	* addl $cte, %r10d           | 41 81 c2 00 00 00 00
+	*                            |          ----cte----
+	*                            |
+	**************************************************************/
+				
 					num_lendian(cod_opr_add_cte_reg, 3, 4, idx2);
 					retorno = write_commands(cod_opr_add_cte_reg, SZ_OPR_ADD_CTE_REG);
 					break;
+					
+	/*************************************************************
+	* adicionar var à reg em asm | adicionar var à reg em bytes
+	*                            |
+	* addl <v2>, %r10d           | 44 03 55 00
+	*                            |          off = -4*(idx+1)
+	*                            |
+	**************************************************************/
+					
 				case 'v':
-					num_lendian(cod_opr_add_var_reg, 3, 1, -(idx2*4));
+					num_lendian(cod_opr_add_var_reg, 3, 1, -4*(idx2+1));
 					retorno = write_commands(cod_opr_add_var_reg, SZ_OPR_ADD_VAR_REG);
 					break;
+					
+				case 'p':
+				
+	/*************************************************************
+	* adicionar parm à reg em asm | adicionar parm à reg em bytes
+	*                             |
+	* addl <p0>, %r10d            | 44 03 55 e4
+	*                             |
+	**************************************************************/
+				
+					retorno = write_commands(cod_opr_add_parm_reg, SZ_OPR_ADD_PARM_REG);
+					break;
+					
 				default:
 					return -1;
-			}/* switch(var2) */
+					
+			} /* switch(var2) */
+			break;
+			
 		case '-':
 			switch(var2){
+			
+	/*************************************************************
+	* subtrair cte à reg em asm | subtrair cte à reg em bytes
+	*                           |
+	* subl $cte, %r10d          | 41 81 ea 00 00 00 00
+	*                           |          ----cte----
+	*                           |
+	**************************************************************/
+			
 				case '$':
 					num_lendian(cod_opr_sub_cte_reg, 3, 4, idx2);
 					retorno = write_commands(cod_opr_sub_cte_reg, SZ_OPR_SUB_CTE_REG);
 					break;
+					
+	/*************************************************************
+	* subtrair var à reg em asm | subtrair var à reg em bytes
+	*                           |
+	* subl <v2>, %r10d          | 44 2b 55 00
+	*                           |          off = -4*(idx+1)
+	*                           |
+	**************************************************************/
+					
 				case 'v':
-					num_lendian(cod_opr_sub_var_reg, 3, 1, -(idx2*4));
+					num_lendian(cod_opr_sub_var_reg, 3, 1, -4*(idx2+1));
 					retorno = write_commands(cod_opr_sub_var_reg, SZ_OPR_SUB_VAR_REG);
 					break;
+					
+	/*************************************************************
+	* subtrair parm à reg em asm | subtrair parm à reg em bytes
+	*                            |
+	* subl <v2>, %r10d           | 44 2b 55 e4
+	*                            |
+	**************************************************************/
+					
+				case 'p':
+					retorno = write_commands(cod_opr_sub_parm_reg, SZ_OPR_SUB_PARM_REG);
+					break;
+					
 				default:
 					return -1;
-				}/* switch(var2) */
+					
+				} /* switch(var2) */
+				break;
+				
 		case '*':
 			switch(var2){
+			
+	/************************************************************
+	* multiplicar cte à reg em asm | multiplicar cte à reg em bytes
+	*                              |
+	* imull $cte, %r10d            | 45 69 d2 00 00 00 00
+	*                              |          ----cte----
+	*                              |
+	**************************************************************/
+			
 				case '$':
 					num_lendian(cod_opr_mult_cte_reg, 3, 4, idx2);
 					retorno = write_commands(cod_opr_mult_cte_reg, SZ_OPR_MULT_CTE_REG);
 					break;
+					
+	/************************************************************
+	* multiplicar var à reg em asm | multiplicar var à reg em bytes
+	*                              |
+	* imull <v2>, %r10d            | 44 0f af 55 00
+	*                              |             off = -4*(idx+1)
+	*                              |
+	**************************************************************/
+					
 				case 'v':
 					num_lendian(cod_opr_mult_var_reg, 4, 1, -(idx2*4));
-					retorno = write_commands(cod_opr_MULT_var_reg, SZ_OPR_MULT_VAR_REG);
+					retorno = write_commands(cod_opr_mult_var_reg, SZ_OPR_MULT_VAR_REG);
 					break;
+					
+	/************************************************************
+	* multiplicar parm à reg em asm | multiplicar parm à reg em bytes
+	*                               |
+	* imull <v2>, %r10d             | 44 0f af 55 e4
+	*                               |
+	**************************************************************/
+					
+				case 'p':
+					retorno = write_commands(cod_opr_mult_parm_reg, SZ_OPR_MULT_PARM_REG);
+					break;
+					
 				default:
 					return -1;
-			}/* switch(var2) */
+					
+			} /* switch(var2) */
+			break;
+			
 		default:
-			return -1
-	}/* switch(op) */
+			return -1;
+			
+	} /* switch(op) */
 	
-	if(retorno) return retorno;
-	num_lendian(cod_mov_reg_var, 3, 1, -(idx0*4));
+	if(retorno)
+	  return 1;
+	  
+	/************************************************************
+	* mover reg para var em asm   | mover reg para var em bytes
+	*                             |
+	* movl %r10d, <v0>            | 44 89 55 00
+	*                             |          off = -4*(idx+1)
+	*                             |
+	**************************************************************/
+	  
+	num_lendian(cod_mov_reg_var, 3, 1, -4*(idx0+1));
 	return write_commands(cod_mov_reg_var, SZ_MOV_REG_VAR);
+	
 } /* Fim da função cmd_opr */
 
 

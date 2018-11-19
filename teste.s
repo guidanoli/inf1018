@@ -5,8 +5,9 @@ f1:
 	ret
 
 main:
-	movl $32, %edi
-	call f1
-	movl %eax, -10(%rbp)
+	movl -28(%rbp), %r10d
+	addl -28(%rbp), %r10d
+	subl -28(%rbp), %r10d
+	imull -28(%rbp), %r10d
 	movl $0, %eax
 	ret
