@@ -1,0 +1,206 @@
+Relatório do trabalho 2 de Software Básico 2018.2 - PUC-Rio
+
+Aluno: Guilherme Dantas	Matrícula: 1713155
+Aluno: Rafael Damazio   Matrícula: 1712990
+
+Nenhum erro foi encontrado nos scripts em SBF testados.
+Os seguintes programas SBF estão funcionando e seus resultados (separados por linha):
+
+---------------------------
+
+  RETORNAR CTE
+
+function
+ret $100
+end
+
+qq input -> 100
+
+---------------------------
+
+  DECREMENTAR
+
+function
+v0 = p0 + $-1
+ret v0
+end
+
+-1 -> -2
+0 -> -1
+1 -> 0
+
+---------------------------
+
+  INCREMENTAR
+
+function
+v0 = p0 + $1
+ret v0
+end
+
+-1 -> 0
+0 -> 1
+1 -> 2
+
+---------------------------
+
+  FACTORIAL
+
+function
+zret p0 $1
+v0 = p0 + $0
+v1 = v0 - $1
+v1 = call 0 v1
+v0 = v0 * v1
+ret v0
+end
+
+-1 -> segmentation fault (esperado, pois n! existe para naturais)
+0 -> 1
+1 -> 1
+2 -> 2
+3 -> 6
+4 -> 24
+5 -> 120
+
+---------------------------
+
+  SOMA DOS QUADRADOS
+
+function
+v0 = p0 * p0
+ret v0
+end
+function
+zret p0 $0
+v0 = p0 - $1
+v1 = call 0 p0
+v0 = call 1 v0
+v0 = v0 + v1
+ret v0
+end
+
+0 -> 0
+1 -> 1
+2 -> 5
+3 -> 14
+4 -> 30
+5 -> 55
+6 -> 91
+7 -> 140
+8 -> 204
+
+---------------------------
+
+  TESTAR ZRET
+
+function
+zret p0 $1
+v0 = p0 - $1
+zret v0 $2
+v1 = v0 - $1
+v2 = $2 + $1
+zret v1 v2
+v3 = v1 - $1
+zret v3 p0
+zret $0 $4
+end
+
+0 -> 1
+1 -> 2
+2 -> 3
+3 -> 3
+4 em diante -> 4
+
+---------------------------
+
+  SOMA COM PARAMETRO E VAR
+
+function
+v0 = p0 + $10
+v1 = p0 + p0
+v2 = p0 + v0
+v3 = v0 + v1
+v3 = v3 + v2
+ret v3
+end
+
+-10 -> -30
+0 -> 20
+10 -> 70
+20 -> 120
+
+---------------------------
+
+  SUBTRAÇÃO COM PARAMETRO E VAR
+
+function
+v0 = p0 - $10
+v1 = p0 - p0
+v2 = p0 - v0
+v3 = v0 - v1
+v3 = v3 - v2
+ret v3
+end
+
+10 -> -10
+0 -> -20
+-10 -> -30
+
+---------------------------
+
+  MULTIPLICAÇÃO COM PARAMETRO E VAR
+
+function
+v0 = p0 * $10
+v1 = p0 * p0
+v2 = p0 * v0
+v3 = v0 * v1
+v3 = v3 * v2
+ret v3
+end
+
+-2 -> -3200
+-1 -> -100
+0 -> 0
+1 -> 100
+2 -> 3200
+
+---------------------------
+
+  SOMA ENTRE CONSTANTES
+
+function
+v0 = $0 + $1
+v0 = v0 + v0
+ret v0
+end
+
+qq input -> 2
+
+---------------------------
+
+  DIFERENCA ENTRE CONSTANTES
+
+function
+v0 = $0 - $1
+v1 = $0 + $0
+v0 = v0 - v1
+ret v0
+end
+
+qq input -> -1
+
+---------------------------
+
+  MULTIPLICACAO ENTRE CONSTANTES
+
+function
+v0 = $2 * $3
+v0 = v0 * v0
+ret v0
+end
+
+qq input -> 36
+
+---------------------------

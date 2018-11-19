@@ -749,7 +749,7 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	**************************************************************/
 		
 		/* Move <p0> para %r10d */
-		num_lendian( cod_mov_var_reg , 3 , 1 , idx0 );
+		num_lendian( cod_mov_var_reg , 3 , 1 , -4*(idx0+1) );
 		retorno = write_commands( cod_mov_var_reg , SZ_MOV_VAR_REG );
 		
 		if( retorno )
