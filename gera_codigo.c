@@ -64,6 +64,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 
 #define f_offset(f_id) (end_func[f_id] - byte_corr - 5)
 
+#define _DEBUG
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
@@ -106,7 +107,7 @@ static unsigned char cod_ret_cte[SZ_RET_CTE] = {0xb8,0x00,0x00,0x00,0x00};
 static unsigned char cod_ret_parm[SZ_RET_PARM] = {0x8b,0x45,0xe4};
 static unsigned char cod_ret_var[SZ_RET_VAR] = {0x8b,0x45,0x00};
 static unsigned char cod_zret_cmpl[SZ_ZRET_CMPL] = {0x41,0x83,0xfa,0x00};
-static unsigned char cod_zret_jne[SZ_ZRET_JNE] = {0x75,0x02};
+static unsigned char cod_zret_jne[SZ_ZRET_JNE] = {0x75,0x07};
 static unsigned char cod_end[SZ_END] = {0xc9,0xc3};
 
 /***************** Variáveis globais *****************/
@@ -769,14 +770,15 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	if( retorno )
 		return 1;
 	
-	/* Move <param2> para %eax */
-	retorno = cmd_ret( var1, idx1 );
+	/* Compara flag com $0 */
+	retorno = write_commands( cod_zret_jne , SZ_ZRET_JNE );
 	
 	if( retorno )
 		return 1;
 	
-	/* Compara flag com $0 */
-	retorno = write_commands( cod_zret_jne , SZ_ZRET_JNE );
+	/* Move <param2> para %eax */
+	retorno = cmd_ret( var1, idx1 );
+	
 	
 	if( retorno )
 		return 1;
@@ -1093,7 +1095,7 @@ int cmd_opr( char var0, int idx0, char var1, int idx1, char op, char var2, int i
 	**************************************************************/
 					
 				case 'v':
-					num_lendian(cod_opr_mult_var_reg, 4, 1, -(idx2*4));
+					num_lendian(cod_opr_mult_var_reg, 4, 1, -4*(idx2+1));
 					retorno = write_commands(cod_opr_mult_var_reg, SZ_OPR_MULT_VAR_REG);
 					break;
 					
