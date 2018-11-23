@@ -17,15 +17,15 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *
 *	Versionamento:
 *		Versão     Data			Autores		Descrição
-*		 1.0		06/11/2018	gui,raf		Início do desenvolvimento
-*		 1.1    08/11/2018  gui,raf		Estrutura da função gera_codigo
-*		 1.2    13/11/2018  gui				Funções write_commands e print_commands
-*		 1.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
+*		 0.0		06/11/2018	gui,raf		Início do desenvolvimento
+*		 0.1    08/11/2018  gui,raf		Estrutura da função gera_codigo
+*		 0.2    13/11/2018  gui				Funções write_commands e print_commands
+*		 0.3		14/11/2018	gui				Funções cmd_function, cmd_ret, cmd_end,
 *																	num_lendian, cmd_zret
-*		 1.4		14/11/2018	gui				entry aponta para última função
-*    1.5    15/11/2018  raf       Funções cmd_call e cmd_opr
-*    1.6    18/11/2018  gui       Fixes
-*
+*		 0.4		14/11/2018	gui				entry aponta para última função
+*    0.5    15/11/2018  raf       Funções cmd_call e cmd_opr
+*    1.0    18/11/2018  gui       Versão final
+*	 1.1    23/11/2018  raf       Bug Fixes
 ******************************************************************/
 
 #include <stdio.h>
@@ -64,7 +64,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 
 #define f_offset(f_id) (end_func[f_id] - byte_corr - 5)
 
-#define _DEBUG
+//#define _DEBUG
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
@@ -144,6 +144,8 @@ static unsigned char * pCode = NULL;
 ****************************************************************/
 
 void libera_codigo (void *p) {
+  qtd_func     = 0 ;
+  byte_corr    = 0 ;	
   free(p);
 } /* Fim da função libera_codigo */
 
@@ -719,7 +721,7 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	* "zret <p0> #" em asm	|	"zret <p0> #" em bytes
 	*												|
 	*	movl <p0>, $r10d			|	44 8b 55 e4 -> cod_mov_parm_reg
-	*	cmpl <p0>, %r10d			| 41 83 fa 00 -> cod_zret_cmpl
+	*	cmpl $0, %r10d			  | 41 83 fa 00 -> cod_zret_cmpl
 	*	movl <param2>, %eax		| CMD_RET ( param2 )
 	*	jne <label>						|	75 02 -> cod_zret_jne
 	*	leave									|
@@ -741,7 +743,7 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	* "zret <vi> #" em asm	|	"zret <vi> #" em bytes
 	*												|
 	*	movl <vi>, $r10d			|	44 8b 55 00 -> cod_mov_var_reg
-	*	cmpl <vi>, %r10d			| 41 83 fa 00 -> cod_zret_cmpl
+	*	cmpl $0, %r10d	  		| 41 83 fa 00 -> cod_zret_cmpl
 	*	movl <param2>, %eax		| CMD_RET ( param2 )
 	*	jne <label>						|	75 02 -> cod_zret_jne
 	*	leave									|
@@ -750,7 +752,7 @@ int cmd_zret ( char var0, int idx0, char var1, int idx1 ) {
 	**************************************************************/
 		
 		/* Move <p0> para %r10d */
-		num_lendian( cod_mov_var_reg , 3 , 1 , idx0 );
+		num_lendian( cod_mov_var_reg , 3 , 1 , -4*(idx0+1) );
 		retorno = write_commands( cod_mov_var_reg , SZ_MOV_VAR_REG );
 		
 		if( retorno )
@@ -1136,8 +1138,3 @@ int cmd_opr( char var0, int idx0, char var1, int idx1, char op, char var2, int i
 	return write_commands(cod_mov_reg_var, SZ_MOV_REG_VAR);
 	
 } /* Fim da função cmd_opr */
-
-
-
-
-

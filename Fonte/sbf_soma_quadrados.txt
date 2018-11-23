@@ -1,0 +1,12 @@
+function
+v0 = p0 * p0
+ret v0
+end
+function
+zret p0 $0
+v0 = p0 - $1
+v1 = call 0 p0
+v0 = call 1 v0
+v0 = v0 + v1
+ret v0
+end

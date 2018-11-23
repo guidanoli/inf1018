@@ -3,7 +3,7 @@
 # Como executar o programa
 Basta rodar os seguintes comandos no terminal...
 ~~~~
-gcc -o prog gerar_codigo.c gerar_codigo.h main.c
+gcc -Wall -Wa,--execstack -o prog main.c gera_codigo.h gera_codigo.c
 ./prog sbf.txt
 ~~~~
 
@@ -15,5 +15,5 @@ objdump -d teste.o
 ~~~~
 
 Att,
-Guilherme Dantas
+Guilherme Dantas e
 Rafael Damazio
