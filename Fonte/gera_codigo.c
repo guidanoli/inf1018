@@ -25,7 +25,7 @@ Aluno: Rafael Damazio Matrícula: 1712990
 *		 0.4		14/11/2018	gui				entry aponta para última função
 *    0.5    15/11/2018  raf       Funções cmd_call e cmd_opr
 *    1.0    18/11/2018  gui       Versão final
-*	 1.1    23/11/2018  raf       Bug Fixes
+*	   1.1    23/11/2018  raf       Bug Fixes
 ******************************************************************/
 
 #include <stdio.h>
@@ -64,7 +64,6 @@ Aluno: Rafael Damazio Matrícula: 1712990
 
 #define f_offset(f_id) (end_func[f_id] - byte_corr - 5)
 
-//#define _DEBUG
 /********* Protótipos das funções encapsuladas pelo módulo *********/
 
 static void error (const char *msg, int line);
@@ -144,9 +143,12 @@ static unsigned char * pCode = NULL;
 ****************************************************************/
 
 void libera_codigo (void *p) {
-  qtd_func     = 0 ;
-  byte_corr    = 0 ;	
+
   free(p);
+  qtd_func     = 0 ;
+  byte_corr    = 0 ;
+  pCode        = NULL ;
+  
 } /* Fim da função libera_codigo */
 
 /***************************************************************
@@ -191,12 +193,6 @@ void gera_codigo (FILE *f, void **code, funcp *entry) {
   byte_corr = 0;
   qtd_func = 0;
   *code = NULL;
-  
-  if( pCode != NULL )
-  {
-    free(pCode);
-    pCode = NULL;
-  }
   
 	pCode = (unsigned char *) malloc(DIM_VT_CODIGO);
 	/* O valor 1024 foi estimado através do comando mais
