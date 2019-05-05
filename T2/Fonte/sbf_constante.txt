@@ -1,0 +1,4 @@
+function
+ret $100
+end
+
