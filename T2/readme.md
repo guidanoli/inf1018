@@ -1,19 +1,15 @@
-# Trabalho 2 de SOFTWARE BÁSICO (PUC-Rio) 
+# Language compiler and interpreter in C
 
-# Como executar o programa
-Basta rodar os seguintes comandos no terminal...
-~~~~
-gcc -Wall -Wa,--execstack -o prog main.c gera_codigo.h gera_codigo.c
-./prog sbf.txt
-~~~~
+# Execution
 
-# Como depurar um disassembly
-Basta rodar os seguintes comandos no terminal...
-~~~~
-gcc -c teste.s
-objdump -d teste.o
-~~~~
+``` shell
+$ gcc -Wall -Wa,--execstack -o prog main.c gera_codigo.h gera_codigo.c
+$ ./prog sbf.txt
+```
 
-Att,
-Guilherme Dantas e
-Rafael Damazio
+# Debug
+
+``` shell
+$ gcc -c teste.s
+$ objdump -d teste.o
+```
